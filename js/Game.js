@@ -17,8 +17,7 @@ class Game {
         this.aiLaps = [];
         
         this.init();
-    }
-      async init() {
+    }    async init() {
         this.setupScene();
         this.setupLighting();
         
@@ -33,16 +32,18 @@ class Game {
         
         this.createKarts();
         
+        // Positionner la caméra derrière le kart du joueur dès le début
+        this.updateCamera();
+        
         // Démarrer la boucle de jeu
         this.animate();
-    }
-      setupScene() {
+    }setupScene() {
         this.scene = new THREE.Scene();
-        this.scene.fog = new THREE.Fog(0x87CEEB, 50, 200);
+        this.scene.fog = new THREE.Fog(0x87CEEB, 50, 400);
         
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        // Position initiale de la caméra pour voir le circuit
-        this.camera.position.set(0, 50, 100);
+        // Position initiale temporaire - sera mise à jour après création des karts
+        this.camera.position.set(0, 10, 10);
         this.camera.lookAt(0, 0, 0);
         
         this.renderer = new THREE.WebGLRenderer({ antialias: true });

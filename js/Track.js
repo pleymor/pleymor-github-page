@@ -99,30 +99,9 @@ class Track {
         this.baseMesh.position.y = -0.2;
         this.baseMesh.receiveShadow = true;
     }
-    
-    createBarriers() {
-        // Créer des barrières le long de la piste
-        for (let i = 0; i < this.trackPoints.length; i += 10) {
-            const point = this.trackPoints[i];
-            const next = this.trackPoints[(i + 1) % this.trackPoints.length];
-            
-            const direction = new THREE.Vector3().subVectors(next, point).normalize();
-            const perpendicular = new THREE.Vector3(-direction.z, 0, direction.x);
-            
-            // Barrières à gauche et à droite
-            const leftBarrier = new THREE.Vector3().addVectors(point, perpendicular.clone().multiplyScalar(8));
-            const rightBarrier = new THREE.Vector3().addVectors(point, perpendicular.clone().multiplyScalar(-8));
-            
-            this.barriers.push({
-                position: leftBarrier,
-                radius: 0.5
-            });
-            
-            this.barriers.push({
-                position: rightBarrier,
-                radius: 0.5
-            });
-        }
+      createBarriers() {
+        // Poteaux/barrières supprimés - piste libre sans obstacles
+        console.log('Barrières désactivées - course libre');
     }
     
     addToScene(scene) {

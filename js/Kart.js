@@ -121,8 +121,7 @@ class Kart {
         const nextIndex = (Math.floor(this.trackProgress) + 5) % trackPoints.length;
         return trackPoints[nextIndex];
     }
-    
-    applyPhysics() {
+      applyPhysics() {
         // Friction
         this.speed *= this.friction;
         
@@ -130,8 +129,8 @@ class Kart {
         this.velocity.x = Math.sin(this.rotation) * this.speed;
         this.velocity.z = Math.cos(this.rotation) * this.speed;
         
-        // Vérifier les collisions avec les barrières
-        this.checkBarrierCollisions();
+        // Barrières supprimées - plus de vérification de collision
+        // this.checkBarrierCollisions();
         
         // Gravité et hauteur du terrain
         const terrainHeight = this.game.getTrack().getTerrainHeight(this.position.x, this.position.z);

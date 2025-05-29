@@ -10,10 +10,10 @@ Un jeu de karting 3D développé en JavaScript avec Three.js, featuring un syst�
 
 Ce projet présente un jeu de karting 3D complet avec :
 - **Circuit procédural** de 1500 points avec largeur variable
-- **Physique réaliste** avec collisions et rebonds
+- **Physique réaliste** avec course libre (sans barrières)
 - **IA compétitive** pour 3 adversaires
 - **Système de musique procédurale** utilisant Web Audio API
-- **Effets sonores dynamiques** (départ, collision, victoire)
+- **Effets sonores dynamiques** (départ, victoire)
 
 ## 🚀 Fonctionnalités
 
@@ -27,14 +27,14 @@ Ce projet présente un jeu de karting 3D complet avec :
 ### 🎵 Système Audio
 - **Musique procédurale** : Génération automatique de mélodies, basses et percussions
 - **4 gammes musicales** : Majeure, mineure, pentatonique, dorienne
-- **Effets sonores** : Départ, passage de tour, collisions, victoire
+- **Effets sonores** : Départ, passage de tour, victoire
 - **Contrôles audio** : Activation/désactivation et réglage du volume
 - **Enveloppes ADSR** pour des sons naturels
 
 ### 🎨 Graphismes 3D
 - **Rendu Three.js** avec ombres et éclairage
 - **Circuit élargi** 30x plus grand que la version initiale
-- **Barrières de sécurité** avec détection de collision
+- **Course libre** sans obstacles physiques
 - **Terrain procédural** adaptatif
 - **Effets visuels** : Brouillard, ombres portées
 
@@ -43,11 +43,15 @@ Ce projet présente un jeu de karting 3D complet avec :
 ```
 kart/
 ├── README.md
-├── v1/
-│   └── index.html              # Version originale simple
-└── v2/
-    ├── index.html              # Version complète avec musique
-    └── musicGenerator.js       # Système de musique procédurale
+├── index.html                  # Jeu de karting 3D avec musique
+└── js/
+    ├── AudioManager.js         # Gestion audio et effets sonores
+    ├── Game.js                 # Logique principale du jeu
+    ├── InputManager.js         # Gestion des contrôles
+    ├── Kart.js                 # Classe des karts et physique
+    ├── musicGenerator.js       # Système de musique procédurale
+    ├── Track.js                # Génération et gestion du circuit
+    └── UIManager.js            # Interface utilisateur
 ```
 
 ## 🛠️ Installation et Lancement
@@ -58,8 +62,8 @@ kart/
 
 ### Méthode 1 : Serveur Python
 ```bash
-# Naviguer vers le dossier v2
-cd c:\Users\pleym\Projects\kart\v2
+# Naviguer vers le dossier du projet
+cd c:\Users\pleym\Projects\kart
 
 # Démarrer le serveur HTTP local
 python -m http.server 8000
@@ -70,16 +74,16 @@ python -m http.server 8000
 
 ### Méthode 2 : Extension VS Code
 1. Installer l'extension "Live Server"
-2. Clic droit sur `v2/index.html`
+2. Clic droit sur `index.html`
 3. Sélectionner "Open with Live Server"
 
 ### Méthode 3 : Autres serveurs
 ```bash
 # Node.js
-npx serve v2
+npx serve .
 
 # PHP
-cd v2 && php -S localhost:8000
+php -S localhost:8000
 ```
 
 ## 🎮 Contrôles
@@ -109,6 +113,7 @@ cd v2 && php -S localhost:8000
 
 #### 🏎️ Classe Kart
 ```javascript
+// Dans js/Kart.js
 class Kart {
     constructor(color, isPlayer = false)
     handlePlayerInput()     // Gestion des contrôles
@@ -120,6 +125,7 @@ class Kart {
 
 #### 🎵 Classe MusicGenerator
 ```javascript
+// Dans js/musicGenerator.js
 class MusicGenerator {
     generateMelody()       // Création de mélodies
     generateBass()         // Lignes de basse
@@ -130,16 +136,16 @@ class MusicGenerator {
 ```
 
 #### 🏁 Fonctions Principales
-- `createTrack()` : Génération procédurale du circuit
-- `createBarriers()` : Placement des barrières de sécurité
-- `startRaceSequence()` : Séquence de départ avec feux
-- `checkBarrierCollisions()` : Système de collision réaliste
+- `createTrack()` : Génération procédurale du circuit (Track.js)
+- `createBarriers()` : Fonction désactivée (plus de barrières) (Track.js)
+- `startRaceSequence()` : Séquence de départ avec feux (Game.js)
+- `applyPhysics()` : Physique libre sans collisions (Kart.js)
 
 ## 🎨 Personnalisation
 
 ### Modification du Circuit
 ```javascript
-// Dans createTrack()
+// Dans js/Track.js - fonction createTrack()
 const numPoints = 1500;           // Nombre de points du circuit
 const baseRadius = 150;           // Rayon de base
 const baseWidth = 12;             // Largeur de piste de base
@@ -147,7 +153,7 @@ const baseWidth = 12;             // Largeur de piste de base
 
 ### Configuration Audio
 ```javascript
-// Dans MusicGenerator constructor
+// Dans js/musicGenerator.js - MusicGenerator constructor
 this.tempo = 130;                 // BPM de la musique
 this.masterVolume = 0.3;          // Volume général
 this.currentScale = this.scales.dorian;  // Gamme musicale
@@ -155,7 +161,7 @@ this.currentScale = this.scales.dorian;  // Gamme musicale
 
 ### Paramètres de Jeu
 ```javascript
-// Dans Kart constructor
+// Dans js/Kart.js - Kart constructor
 this.maxSpeed = isPlayer ? 0.8 : 0.6;     // Vitesse maximale
 this.acceleration = 0.02;                  // Accélération
 this.turnSpeed = 0.05;                     // Vitesse de rotation
@@ -197,10 +203,6 @@ AudioContext → OscillatorNode → FilterNode → GainNode → Destination
 ### Performance dégradée
 - **Cause** : Trop d'oscillateurs audio simultanés
 - **Solution** : Réduire le volume ou désactiver la musique
-
-### Collisions imprécises
-- **Cause** : Physique trop simplifiée
-- **Solution** : Ajuster `kartRadius` dans `checkBarrierCollisions()`
 
 ## 📈 Évolutions Futures
 
