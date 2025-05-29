@@ -551,8 +551,7 @@
           function getTerrainHeight(x, z) {
             // Retourner une hauteur constante pour correspondre à la piste plate
             return 0; // Le terrain est maintenant au niveau 0
-        }
-          function createKarts() {
+        }        function createKarts() {
             // Kart du joueur
             playerKart = new Kart(0xff0000, true);
             playerKart.position.copy(trackPoints[0]);
@@ -568,6 +567,9 @@
                 aiKarts.push(aiKart);
                 aiLaps.push(0);
             }
+            
+            // Positionner la caméra dès que le kart du joueur est créé
+            updateCamera();
         }
           function startRaceSequence() {
             const redLight = document.getElementById('redLight');
@@ -653,8 +655,7 @@
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
         }
-        
-        function updateCamera() {
+          function updateCamera() {
             if (playerKart) {
                 const offset = new THREE.Vector3(
                     Math.sin(playerKart.rotation + Math.PI) * 10,
@@ -687,14 +688,15 @@
             document.getElementById('winnerText').textContent = message;
             document.getElementById('winner').style.display = 'block';
         }
-        
-        function animate() {
+          function animate() {
             requestAnimationFrame(animate);
+            
+            // Toujours mettre à jour la caméra, même avant le début de la course
+            updateCamera();
             
             if (gameStarted && !raceFinished) {
                 playerKart.update();
                 aiKarts.forEach(kart => kart.update());
-                updateCamera();
                 updateUI();
             }
             
