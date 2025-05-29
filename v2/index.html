@@ -27,6 +27,63 @@
             z-index: 100;
             font-size: 18px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }          #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+            text-align: center;
+        }
+        
+        #startScreen h1 {
+            font-size: 4em;
+            margin: 0 0 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        #startScreen p {
+            font-size: 1.2em;
+            margin: 10px 0;
+            opacity: 0.9;
+        }
+        
+        #startButton {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            color: white;
+            padding: 20px 40px;
+            font-size: 1.5em;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 30px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        
+        #startButton:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.4);
+            background: linear-gradient(45deg, #ee5a24, #ff6b6b);
+        }
+        
+        #startButton:active {
+            transform: translateY(0);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
         }
         
         #trafficLight {
@@ -101,14 +158,21 @@
     </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <div id="ui">
+    <div id="gameContainer">        <div id="ui" style="display: none;">
             <div>Tours: <span id="lapCount">0/3</span></div>
             <div>Position: <span id="position">1</span></div>
             <div>Vitesse: <span id="speed">0</span> km/h</div>
+        </div><div id="startScreen">
+            <h1>🏎️ Karting 3D 🏎️</h1>
+            <p>Préparez-vous pour une course intense!</p>
+            <p>Course de 3 tours sur circuit procédural</p>
+            <p>Contrôles: ↑↓ Accélération/Frein • ←→ Direction</p>
+            <button id="startButton" onclick="startGame()">
+                🚀 Démarrer la Course 🚀
+            </button>
         </div>
         
-        <div id="trafficLight">
+        <div id="trafficLight" style="display: none;">
             <div>Préparez-vous!</div>
             <div class="light red off" id="redLight"></div>
             <div class="light yellow off" id="yellowLight"></div>
@@ -375,8 +439,7 @@
                 }
             }
         }
-        
-        function init() {
+          function init() {
             // Créer la scène
             scene = new THREE.Scene();
             scene.fog = new THREE.Fog(0x87CEEB, 50, 200);
@@ -418,15 +481,33 @@
             // Créer les karts
             createKarts();
             
-            // Commencer la séquence de départ
-            startRaceSequence();
-            
             // Événements
             setupEventListeners();
             
             // Boucle de jeu
             animate();
-        }        function createTrack() {
+        }
+          // Nouvelle fonction pour démarrer le jeu
+        function startGame() {
+            // Masquer l'écran de démarrage
+            document.getElementById('startScreen').style.display = 'none';
+            
+            // Afficher l'interface utilisateur
+            document.getElementById('ui').style.display = 'block';
+            
+            // Activer l'audio immédiatement
+            if (musicGenerator && musicGenerator.audioContext) {
+                if (musicGenerator.audioContext.state === 'suspended') {
+                    musicGenerator.audioContext.resume().then(() => {
+                        console.log('AudioContext activé par le bouton Démarrer');
+                    });
+                }
+            }
+            
+            // Afficher les feux de circulation et commencer la séquence
+            document.getElementById('trafficLight').style.display = 'block';
+            startRaceSequence();
+        }function createTrack() {
             // Générer les points de la piste de façon procédurale - circuit 30x plus long
             const numPoints = 1500; // 30 fois plus de points (50 * 30)
             const baseRadius = 150; // Rayon de base plus grand
@@ -601,8 +682,7 @@
             }
             
             // Positionner la caméra dès que le kart du joueur est créé
-            updateCamera();
-        }        function startRaceSequence() {
+            updateCamera();        }        function startRaceSequence() {
             const redLight = document.getElementById('redLight');
             const yellowLight = document.getElementById('yellowLight');
             const greenLight = document.getElementById('greenLight');
@@ -612,23 +692,26 @@
                 musicGenerator = window.musicGenerator;
             }
             
-            // Activer automatiquement la musique au démarrage
-            if (musicGenerator && musicEnabled) {
-                // L'AudioContext doit être activé par une interaction utilisateur
-                // On affiche donc un message pour que l'utilisateur clique
-                console.log('Musique activée - cliquez n\'importe où pour démarrer l\'audio');
-            }
-            
             // Séquence: Rouge
             setTimeout(() => {
                 redLight.classList.remove('off');
                 redLight.classList.add('red');
+                
+                // Jouer le son du feu rouge
+                if (musicGenerator && musicEnabled) {
+                    musicGenerator.playEffect('redLight');
+                }
             }, 1000);
             
             // Séquence: Rouge + Jaune
             setTimeout(() => {
                 yellowLight.classList.remove('off');
                 yellowLight.classList.add('yellow');
+                
+                // Jouer le son du feu jaune
+                if (musicGenerator && musicEnabled) {
+                    musicGenerator.playEffect('yellowLight');
+                }
             }, 2000);
             
             // Séquence: Vert (départ de la course)
@@ -641,9 +724,12 @@
                 greenLight.classList.add('green');
                 gameStarted = true;
                 
-                // Jouer l'effet de départ et démarrer la musique
+                // Jouer le son du feu vert et l'effet de départ
                 if (musicGenerator && musicEnabled) {
-                    musicGenerator.playEffect('start');
+                    musicGenerator.playEffect('greenLight');
+                    setTimeout(() => {
+                        musicGenerator.playEffect('start');
+                    }, 300); // Légèrement après le feu vert
                     setTimeout(() => {
                         musicGenerator.startRaceMusic();
                     }, 1000);
@@ -654,23 +740,7 @@
                     trafficLight.style.display = 'none';
                 }, 1000);
             }, 3500);
-        }
-          function setupEventListeners() {
-            // Activer l'AudioContext dès la première interaction
-            const enableAudio = () => {
-                if (musicGenerator && musicGenerator.audioContext && musicGenerator.audioContext.state === 'suspended') {
-                    musicGenerator.audioContext.resume();
-                }
-                // Retirer les listeners après la première activation
-                document.removeEventListener('click', enableAudio);
-                document.removeEventListener('keydown', enableAudio);
-                document.removeEventListener('touchstart', enableAudio);
-            };
-            
-            document.addEventListener('click', enableAudio);
-            document.addEventListener('keydown', enableAudio);
-            document.addEventListener('touchstart', enableAudio);
-            
+        }          function setupEventListeners() {
             document.addEventListener('keydown', (event) => {
                 switch(event.code) {
                     case 'ArrowUp':

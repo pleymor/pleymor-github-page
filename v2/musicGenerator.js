@@ -37,10 +37,9 @@ class MusicGenerator {
         const octaveShift = Math.floor(note / this.currentScale.length) + octave;
         return this.baseFreq * Math.pow(2, (semitone + octaveShift * 12) / 12);
     }
-    
-    // Créer un oscillateur avec enveloppe ADSR
+      // Créer un oscillateur avec enveloppe ADSR
     createTone(freq, startTime, duration, type = 'sine', volume = 0.1) {
-        if (!this.audioContext) return;
+        if (!this.audioContext || !this.ensureAudioContextActive()) return;
         
         const oscillator = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
@@ -143,10 +142,9 @@ class MusicGenerator {
         
         return drums;
     }
-    
-    // Créer des sons de percussion
+      // Créer des sons de percussion
     createDrumSound(type, startTime, volume = 0.1) {
-        if (!this.audioContext) return;
+        if (!this.audioContext || !this.ensureAudioContextActive()) return;
         
         let freq, duration, filterFreq;
         
@@ -218,10 +216,9 @@ class MusicGenerator {
             oscillator.stop(startTime + duration);
         }
     }
-    
-    // Jouer une séquence musicale complète
+      // Jouer une séquence musicale complète
     playSequence() {
-        if (!this.audioContext || this.isPlaying) return;
+        if (!this.audioContext || this.isPlaying || !this.ensureAudioContextActive()) return;
         
         this.isPlaying = true;
         const startTime = this.audioContext.currentTime + 0.1;
@@ -293,11 +290,23 @@ class MusicGenerator {
     stopMusic() {
         this.currentTrack = null;
         this.isPlaying = false;
+    }    // Vérifier et activer l'AudioContext si nécessaire
+    ensureAudioContextActive() {
+        if (!this.audioContext) return false;
+        
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume().then(() => {
+                console.log('AudioContext activé automatiquement');
+            });
+            return false; // Son ne sera pas joué immédiatement
+        }
+        
+        return this.audioContext.state === 'running';
     }
-    
-    // Jouer un son d'effet spécial
+
+      // Jouer un son d'effet spécial
     playEffect(type) {
-        if (!this.audioContext) return;
+        if (!this.audioContext || !this.ensureAudioContextActive()) return;
         
         const startTime = this.audioContext.currentTime;
         
@@ -306,6 +315,22 @@ class MusicGenerator {
                 // Son de départ de course
                 this.createTone(440, startTime, 0.5, 'square', 0.15);
                 this.createTone(660, startTime + 0.1, 0.4, 'square', 0.1);
+                break;
+            case 'redLight':
+                // Son du feu rouge - ton grave et sérieux
+                this.createTone(220, startTime, 0.6, 'sine', 0.12);
+                this.createTone(165, startTime + 0.1, 0.5, 'sine', 0.08);
+                break;
+            case 'yellowLight':
+                // Son du feu jaune - ton moyen, préparatoire
+                this.createTone(330, startTime, 0.4, 'triangle', 0.1);
+                this.createTone(440, startTime + 0.2, 0.3, 'triangle', 0.08);
+                break;
+            case 'greenLight':
+                // Son du feu vert - ton aigu et énergique
+                this.createTone(660, startTime, 0.3, 'sawtooth', 0.15);
+                this.createTone(880, startTime + 0.1, 0.3, 'sawtooth', 0.12);
+                this.createTone(1100, startTime + 0.2, 0.2, 'sawtooth', 0.1);
                 break;
             case 'lap':
                 // Son de passage de tour
