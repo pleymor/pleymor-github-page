@@ -1,5 +1,6 @@
 // AudioManager.js - Gestionnaire audio refactorisé
 class AudioManager {
+
     constructor(game = null) {
         this.game = game;
         this.audioContext = null;
@@ -10,6 +11,7 @@ class AudioManager {
         this.noteTime = (60 / this.tempo) / 4;
         this.sequenceTimeout = null;
         this.activeNodes = [];
+        this.currentMusicElement = null;
 
         // Gammes musicales
         this.scales = {
@@ -44,6 +46,7 @@ class AudioManager {
             }
         }
     }
+
     async playTrafficLightSequence() {
         await this.activate();
 
@@ -274,89 +277,65 @@ class AudioManager {
         const semitone = this.currentScale[note % this.currentScale.length];
         const octaveShift = Math.floor(note / this.currentScale.length) + octave;
         return this.baseFreq * Math.pow(2, (semitone + octaveShift * 12) / 12);
-    }    startRaceMusic() {
-        console.log('startRaceMusic appelée - musicEnabled:', this.musicEnabled, 'audioContext:', !!this.audioContext, 'isPlaying:', this.isPlaying);
-        
+    }
+
+    getMp3FilesFromAssets() {
+        return [
+            'assets/musics/jazzy-electric-218797.mp3',
+            'assets/musics/lan-party-142331.mp3',
+            'assets/musics/okay.mp3',
+            'assets/musics/ripples-in-a-puddle-349233.mp3',
+            'assets/musics/shattered-339166.mp3',
+            'assets/musics/subterfuge-342945.mp3',
+            'assets/musics/synthetiseur-fire-remix-216315.mp3',
+            'assets/musics/time-to-332609.mp3',
+        ];
+    }
+
+    /**
+     * Joue un mp3 au hasard, présent dans le dossier assets/musics
+     */
+    playRaceMusic() {
         if (!this.audioContext || !this.musicEnabled) return;
 
-        this.tempo = 130;
-        this.noteTime = (60 / this.tempo) / 4;
-        this.currentScale = this.scales.dorian;
+        // Stop any currently playing music first
+        this.stopRaceMusic();
 
-        if (!this.isPlaying) {
-            console.log('Démarrage de la séquence musicale...');
-            this.playSequence();
-        } else {
-            console.log('Musique déjà en cours de lecture');
-        }
+        const musicFiles = this.getMp3FilesFromAssets();
+
+        const randomIndex = Math.floor(Math.random() * musicFiles.length);
+        const musicFile = musicFiles[randomIndex];
+
+        this.audioContext.resume().then(() => {
+            this.currentMusicElement = new Audio(musicFile);
+            this.currentMusicElement.loop = true;
+            this.currentMusicElement.volume = this.masterVolume;
+            this.currentMusicElement.play().catch(error => {
+                console.error('Erreur lors de la lecture de la musique:', error);
+            });
+            this.isPlaying = true;
+        });
     }
 
-    playSequence() {
-        if (!this.audioContext || this.isPlaying) return;
+    stopRaceMusic() {
+        this.isPlaying = false;
+        console.log('Arrêt de la musique');
 
-        if (this.audioContext.state === 'suspended') {
-            this.audioContext.resume();
+        // Stop and clean up the current music element
+        if (this.currentMusicElement) {
+            this.currentMusicElement.pause();
+            this.currentMusicElement.currentTime = 0;
+            this.currentMusicElement = null;
         }
 
-        this.isPlaying = true;
-        const startTime = this.audioContext.currentTime + 0.1;
-
-        // Générer et jouer la musique
-        const melody = this.generateMelody(32);
-        const bassline = this.generateBass(8);
-        const drums = this.generateDrums(32);
-
-        this.playMelody(melody, startTime);
-        this.playBass(bassline, startTime);
-        this.playDrums(drums, startTime);
-
-        const sequenceDuration = melody.reduce((total, note) => total + note.duration, 0);
-        this.sequenceTimeout = setTimeout(() => {
-            this.isPlaying = false;
-            if (this.musicEnabled) {
-                this.playSequence();
-            }
-        }, sequenceDuration * 1000);
-    }
-
-    generateMelody(length = 16, octaveRange = 2) {
-        const melody = [];
-        let currentNote = Math.floor(Math.random() * this.currentScale.length);
-
-        for (let i = 0; i < length; i++) {
-            const movement = Math.random();
-            if (movement < 0.4) {
-                currentNote += Math.floor(Math.random() * 3) + 1;
-            } else if (movement < 0.8) {
-                currentNote -= Math.floor(Math.random() * 3) + 1;
-            }
-
-            currentNote = Math.max(0, Math.min(currentNote, this.currentScale.length * octaveRange - 1));
-
-            melody.push({
-                note: currentNote,
-                duration: this.noteTime * (Math.random() < 0.7 ? 1 : 2),
-                volume: 0.05 + Math.random() * 0.05
+        // Suspend the AudioContext for other sounds
+        if (this.audioContext) {
+            this.audioContext.suspend().then(() => {
+                console.log('AudioContext suspendu');
+            }).catch(error => {
+                console.error('Erreur lors de la suspension de l\'AudioContext:', error);
             });
         }
-
-        return melody;
-    }
-
-    generateBass(length = 8) {
-        const bassline = [];
-        const bassNotes = [0, 2, 4];
-
-        for (let i = 0; i < length; i++) {
-            const note = bassNotes[Math.floor(Math.random() * bassNotes.length)];
-            bassline.push({
-                note: note,
-                duration: this.noteTime * 4,
-                volume: 0.08
-            });
-        }
-
-        return bassline;
     }
 
     generateDrums(length = 16) {
@@ -374,45 +353,6 @@ class AudioManager {
         }
 
         return drums;
-    }
-
-    playMelody(melody, startTime) {
-        let currentTime = startTime;
-        melody.forEach((note) => {
-            const freq = this.noteToFreq(note.note, 1);
-            this.createTone(freq, currentTime, note.duration, 'sawtooth', note.volume);
-            currentTime += note.duration;
-        });
-    }
-
-    playBass(bassline, startTime) {
-        let currentTime = startTime;
-        bassline.forEach((note) => {
-            const freq = this.noteToFreq(note.note, -1);
-            this.createTone(freq, currentTime, note.duration, 'sine', note.volume);
-            currentTime += note.duration;
-        });
-    }
-
-    playDrums(drums, startTime) {
-        let currentTime = startTime;
-        drums.forEach((beat) => {
-            if (beat.kick) this.createDrumSound('kick', currentTime, beat.volume);
-            if (beat.snare) this.createDrumSound('snare', currentTime, beat.volume * 0.8);
-            if (beat.hihat) this.createDrumSound('hihat', currentTime, beat.volume * 0.5);
-            currentTime += beat.duration;
-        });
-    }
-
-    stopMusic() {
-        this.isPlaying = false;
-
-        if (this.sequenceTimeout) {
-            clearTimeout(this.sequenceTimeout);
-            this.sequenceTimeout = null;
-        }
-
-        this.stopAllActiveSounds();
     }
 
     stopAllActiveSounds() {
@@ -439,22 +379,24 @@ class AudioManager {
         });
 
         this.activeNodes = [];
-    }    toggleTheMusic() {
+    }
+
+    toggleTheMusic() {
         this.musicEnabled = !this.musicEnabled;
         console.log('toggleTheMusic - musicEnabled:', this.musicEnabled);
 
         if (!this.musicEnabled) {
             console.log('Désactivation de la musique');
-            this.stopMusic();
+            this.stopRaceMusic();
         } else {
             console.log('Activation de la musique');
             // Activer l'AudioContext au cas où il serait suspendu
             this.activate();
-            
+
             // Redémarrer la musique si le jeu est en cours
             if (this.game && this.game.gameStarted && !this.game.raceFinished) {
                 console.log('Conditions remplies pour redémarrer la musique - gameStarted:', this.game.gameStarted, 'raceFinished:', this.game.raceFinished);
-                this.startRaceMusic();
+                this.playRaceMusic();
             } else {
                 console.log('Conditions non remplies pour redémarrer la musique - game:', !!this.game, 'gameStarted:', this.game?.gameStarted, 'raceFinished:', this.game?.raceFinished);
             }
@@ -468,6 +410,11 @@ class AudioManager {
 
         // Update all active nodes with the new volume
         this.updateActiveNodesVolume();
+
+        // Update the volume of the currently playing music
+        if (this.currentMusicElement) {
+            this.currentMusicElement.volume = this.masterVolume;
+        }
 
         // Update the volume slider if the UI manager exists
         if (this.game && this.game.uiManager) {

@@ -123,18 +123,6 @@ class Kart {
 }
 ```
 
-#### 🎵 Classe MusicGenerator
-```javascript
-// Dans js/musicGenerator.js
-class MusicGenerator {
-    generateMelody()       // Création de mélodies
-    generateBass()         // Lignes de basse
-    generateDrums()        // Patterns rythmiques
-    playEffect(type)       // Effets sonores
-    startRaceMusic()       // Musique de course
-}
-```
-
 #### 🏁 Fonctions Principales
 - `createTrack()` : Génération procédurale du circuit (Track.js)
 - `startRaceSequence()` : Séquence de départ avec feux (Game.js)
