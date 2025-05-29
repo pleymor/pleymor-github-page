@@ -46,12 +46,11 @@ class Track {    constructor() {
             
             const direction = new THREE.Vector3().subVectors(next, current).normalize();
             const perpendicular = new THREE.Vector3(-direction.z, 0, direction.x);
-            
-            // Largeur variable
+              // Largeur variable
             const anglePos = (i / this.trackPoints.length) * Math.PI * 2;
-            const baseWidth = 12;
-            const widthVariation = Math.sin(anglePos * 4) * 6 + Math.cos(anglePos * 3) * 4;
-            const trackWidth = Math.max(8, baseWidth + widthVariation);
+            const baseWidth = 36; // Élargi d'un facteur 3 (12 * 3)
+            const widthVariation = Math.sin(anglePos * 4) * 18 + Math.cos(anglePos * 3) * 12; // Variations aussi multipliées par 3
+            const trackWidth = Math.max(24, baseWidth + widthVariation); // Largeur minimale aussi multipliée par 3
             
             const left = new THREE.Vector3().addVectors(current, perpendicular.clone().multiplyScalar(trackWidth / 2));
             const right = new THREE.Vector3().addVectors(current, perpendicular.clone().multiplyScalar(-trackWidth / 2));
@@ -113,9 +112,8 @@ class Track {    constructor() {
         const startPoint = this.trackPoints[0];
         const direction = new THREE.Vector3().subVectors(this.trackPoints[1], startPoint).normalize();
         const perpendicular = new THREE.Vector3(-direction.z, 0, direction.x);
-        
-        // Positionner les karts côte à côte
-        const spacing = 3;
+          // Positionner les karts côte à côte
+        const spacing = 9; // Espacement multiplié par 3 pour s'adapter à la route élargie
         const offset = (index - 1.5) * spacing; // Centrer autour de 0
         
         const position = new THREE.Vector3().addVectors(
