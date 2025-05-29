@@ -1,6 +1,7 @@
 <!-- index.html - Version refactorisée avec architecture modulaire -->
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,13 +14,13 @@
             overflow: hidden;
             font-family: Arial, sans-serif;
         }
-        
+
         #gameContainer {
             width: 100vw;
             height: 100vh;
             position: relative;
         }
-        
+
         #ui {
             position: absolute;
             top: 20px;
@@ -27,10 +28,10 @@
             color: white;
             z-index: 100;
             font-size: 18px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
             display: none;
         }
-        
+
         #startScreen {
             position: absolute;
             top: 0;
@@ -46,23 +47,23 @@
             color: white;
             text-align: center;
         }
-        
+
         #startScreen h1 {
             font-size: 4em;
             margin: 0 0 20px 0;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
             background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        
+
         #startScreen p {
             font-size: 1.2em;
             margin: 10px 0;
             opacity: 0.9;
         }
-        
+
         #startButton {
             background: linear-gradient(45deg, #ff6b6b, #ee5a24);
             border: none;
@@ -72,31 +73,31 @@
             border-radius: 50px;
             cursor: pointer;
             margin-top: 30px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
             transition: all 0.3s ease;
             text-transform: uppercase;
             font-weight: bold;
             letter-spacing: 2px;
         }
-        
+
         #startButton:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 25px rgba(0,0,0,0.4);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.4);
             background: linear-gradient(45deg, #ee5a24, #ff6b6b);
         }
-        
+
         #startButton:active {
             transform: translateY(0);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
         }
-        
+
         #trafficLight {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 200;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.8);
             padding: 20px;
             border-radius: 10px;
             text-align: center;
@@ -104,7 +105,7 @@
             font-size: 24px;
             display: none;
         }
-        
+
         .light {
             width: 50px;
             height: 50px;
@@ -112,19 +113,30 @@
             margin: 10px auto;
             border: 3px solid #333;
         }
-        
-        .red { background: #ff3333; }
-        .yellow { background: #ffff33; }
-        .green { background: #33ff33; }
-        .off { background: #333; }
-        
+
+        .red {
+            background: #ff3333;
+        }
+
+        .yellow {
+            background: #ffff33;
+        }
+
+        .green {
+            background: #33ff33;
+        }
+
+        .off {
+            background: #333;
+        }
+
         #winner {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 300;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0, 0, 0, 0.9);
             padding: 30px;
             border-radius: 15px;
             text-align: center;
@@ -132,16 +144,16 @@
             font-size: 32px;
             display: none;
         }
-        
+
         #controls {
             position: absolute;
             bottom: 20px;
             left: 20px;
             color: white;
             font-size: 14px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
         }
-        
+
         #controls button {
             background: rgba(255, 255, 255, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.3);
@@ -153,16 +165,53 @@
             font-size: 12px;
             transition: background 0.3s;
         }
-        
+
         #controls button:hover {
             background: rgba(255, 255, 255, 0.3);
         }
-        
+
         #controls button:active {
             background: rgba(255, 255, 255, 0.4);
         }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            margin-top: 8px;
+            gap: 8px;
+            color: white;
+        }
+
+        #volumeSlider {
+            width: 120px;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        #volumeSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        #volumeSlider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+        }
     </style>
 </head>
+
 <body>
     <div id="gameContainer">
         <div id="ui">
@@ -170,7 +219,7 @@
             <div>Position: <span id="position">1</span></div>
             <div>Vitesse: <span id="speed">0</span> km/h</div>
         </div>
-        
+
         <div id="startScreen">
             <h1>🏎️ Karting 3D 🏎️</h1>
             <p>Préparez-vous pour une course intense!</p>
@@ -180,30 +229,30 @@
                 🚀 Démarrer la Course 🚀
             </button>
         </div>
-        
+
         <div id="trafficLight">
             <div>Préparez-vous!</div>
             <div class="light red off" id="redLight"></div>
             <div class="light yellow off" id="yellowLight"></div>
             <div class="light green off" id="greenLight"></div>
         </div>
-        
+
         <div id="winner">
             <div id="winnerText"></div>
             <button onclick="location.reload()">Rejouer</button>
         </div>
-        
         <div id="controls">
             Contrôles: ↑↓ Accélération/Frein • ←→ Direction<br>
             <button id="musicToggle">🔇 Désactiver Musique</button>
-            <button id="volumeDown">🔉 Volume -</button>
-            <button id="volumeUp">🔊 Volume +</button>
+            <!-- <div class="volume-control">
+                🔉 <input type="range" id="volumeSlider" min="0" max="100" value="30" step="1"> 🔊
+            </div> -->
         </div>
     </div>
 
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    
+
     <!-- Classes modulaires -->
     <script src="js/AudioManager.js"></script>
     <script src="js/InputManager.js"></script>
@@ -211,17 +260,17 @@
     <script src="js/Track.js"></script>
     <script src="js/Kart.js"></script>
     <script src="js/Game.js"></script>
-    
+
     <!-- Point d'entrée -->
     <script>
         // Instance globale du jeu
         let game;
-        
+
         // Initialiser le jeu quand la page est chargée
         document.addEventListener('DOMContentLoaded', () => {
             game = new Game();
         });
-        
+
         // Gestion du redimensionnement de la fenêtre
         window.addEventListener('resize', () => {
             if (game && game.camera && game.renderer) {
@@ -232,4 +281,5 @@
         });
     </script>
 </body>
+
 </html>

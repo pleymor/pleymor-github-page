@@ -11,7 +11,6 @@ class Track {
         this.generateTrackPoints();
         this.createTrackGeometry();
         this.createTerrain();
-        this.createBarriers();
     }
     
     generateTrackPoints() {
@@ -98,10 +97,6 @@ class Track {
         this.baseMesh.rotation.x = -Math.PI / 2;
         this.baseMesh.position.y = -0.2;
         this.baseMesh.receiveShadow = true;
-    }
-      createBarriers() {
-        // Poteaux/barrières supprimés - piste libre sans obstacles
-        console.log('Barrières désactivées - course libre');
     }
     
     addToScene(scene) {

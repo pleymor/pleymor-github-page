@@ -137,7 +137,6 @@ class MusicGenerator {
 
 #### 🏁 Fonctions Principales
 - `createTrack()` : Génération procédurale du circuit (Track.js)
-- `createBarriers()` : Fonction désactivée (plus de barrières) (Track.js)
 - `startRaceSequence()` : Séquence de départ avec feux (Game.js)
 - `applyPhysics()` : Physique libre sans collisions (Kart.js)
 
