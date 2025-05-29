@@ -381,8 +381,7 @@
             // Boucle de jeu
             animate();
         }
-        
-        function createTrack() {
+          function createTrack() {
             // Générer les points de la piste de façon procédurale
             const numPoints = 50;
             const radius = 30;
@@ -392,7 +391,7 @@
                 const variation = Math.sin(angle * 3) * 5 + Math.cos(angle * 2) * 3;
                 const x = Math.cos(angle) * (radius + variation);
                 const z = Math.sin(angle) * (radius + variation);
-                const y = Math.sin(angle * 4) * 2 + Math.cos(angle * 2) * 1.5; // Terrain non plat
+                const y = 0; // Garder la piste au niveau du sol
                 
                 trackPoints.push(new THREE.Vector3(x, y, z));
             }
@@ -437,27 +436,12 @@
             // Créer le terrain autour
             createTerrain();
         }
-        
-        function createTerrain() {
+          function createTerrain() {
             const terrainSize = 200;
             const segments = 50;
             const terrainGeometry = new THREE.PlaneGeometry(terrainSize, terrainSize, segments, segments);
             
-            // Ajouter du relief au terrain
-            const positions = terrainGeometry.attributes.position.array;
-            for (let i = 0; i < positions.length; i += 3) {
-                const x = positions[i];
-                const z = positions[i + 2];
-                // Créer des collines et vallées
-                const height = Math.sin(x * 0.05) * Math.cos(z * 0.05) * 5 + 
-                             Math.sin(x * 0.1) * 2 + 
-                             Math.cos(z * 0.08) * 3;
-                positions[i + 1] = height;
-            }
-            
-            terrainGeometry.computeVertexNormals();
-            
-            // Matériau avec texture d'herbe
+            // Le terrain sera plat au niveau 0 pour correspondre à la piste
             const terrainMaterial = new THREE.MeshLambertMaterial({ 
                 color: 0x228B22,
                 transparent: false
@@ -465,7 +449,7 @@
             
             const terrain = new THREE.Mesh(terrainGeometry, terrainMaterial);
             terrain.rotation.x = -Math.PI / 2;
-            terrain.position.y = -5;
+            terrain.position.y = -0.1; // Légèrement en dessous de la piste
             terrain.receiveShadow = true;
             terrain.castShadow = false;
             scene.add(terrain);
@@ -475,7 +459,7 @@
             const baseMaterial = new THREE.MeshLambertMaterial({ color: 0x90EE90 });
             const basePlane = new THREE.Mesh(baseGeometry, baseMaterial);
             basePlane.rotation.x = -Math.PI / 2;
-            basePlane.position.y = -8;
+            basePlane.position.y = -0.2; // En dessous du terrain principal
             basePlane.receiveShadow = true;
             scene.add(basePlane);
         }
@@ -537,20 +521,15 @@
                 radius: 0.5
             });
         }
-        
-        function getTerrainHeight(x, z) {
-            // Calculer la hauteur du terrain en fonction de la position
-            const height = Math.sin(x * 0.05) * Math.cos(z * 0.05) * 5 + 
-                          Math.sin(x * 0.1) * 2 + 
-                          Math.cos(z * 0.08) * 3;
-            return height - 5; // Ajuster pour correspondre à la position du terrain
+          function getTerrainHeight(x, z) {
+            // Retourner une hauteur constante pour correspondre à la piste plate
+            return 0; // Le terrain est maintenant au niveau 0
         }
-        
-        function createKarts() {
+          function createKarts() {
             // Kart du joueur
             playerKart = new Kart(0xff0000, true);
             playerKart.position.copy(trackPoints[0]);
-            playerKart.position.y += 1;
+            playerKart.position.y = 0.5; // Positionner au-dessus du terrain plat
             
             // Karts IA
             const aiColors = [0x0000ff, 0x00ff00, 0xffff00];
@@ -558,33 +537,44 @@
                 const aiKart = new Kart(aiColors[i]);
                 aiKart.position.copy(trackPoints[0]);
                 aiKart.position.x += (i + 1) * 3;
-                aiKart.position.y += 1;
+                aiKart.position.y = 0.5; // Positionner au-dessus du terrain plat
                 aiKarts.push(aiKart);
                 aiLaps.push(0);
             }
         }
-        
-        function startRaceSequence() {
+          function startRaceSequence() {
             const redLight = document.getElementById('redLight');
             const yellowLight = document.getElementById('yellowLight');
             const greenLight = document.getElementById('greenLight');
             const trafficLight = document.getElementById('trafficLight');
             
+            // Séquence: Rouge
             setTimeout(() => {
+                redLight.classList.remove('off');
                 redLight.classList.add('red');
             }, 1000);
             
+            // Séquence: Rouge + Jaune
             setTimeout(() => {
+                yellowLight.classList.remove('off');
                 yellowLight.classList.add('yellow');
             }, 2000);
             
+            // Séquence: Vert (départ de la course)
             setTimeout(() => {
-                greenLight.classList.add('green');
                 redLight.classList.remove('red');
+                redLight.classList.add('off');
                 yellowLight.classList.remove('yellow');
+                yellowLight.classList.add('off');
+                greenLight.classList.remove('off');
+                greenLight.classList.add('green');
                 gameStarted = true;
-                trafficLight.style.display = 'none';
-            }, 3000);
+                
+                // Masquer le feu après 1 seconde
+                setTimeout(() => {
+                    trafficLight.style.display = 'none';
+                }, 1000);
+            }, 3500);
         }
         
         function setupEventListeners() {
