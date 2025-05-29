@@ -5,7 +5,7 @@ class Kart {
         this.game = game;
 
         // Propriétés du kart
-        this.maxSpeed = isPlayer ? 80 : 70; // Vitesse maximale en km/h
+        this.maxSpeed = isPlayer ? 80 : 80; // Vitesse maximale en km/h
         this.acceleration = 1;
         this.deceleration = 0.025;
         this.mixTurnSpeed = 0.50;
@@ -251,7 +251,7 @@ class Kart {
         
         // Perte de vitesse en virage comme pour le joueur
         if (Math.abs(aiSteerInput) > 0.5 && Math.abs(this.speed) > this.maxSpeed * 0.6) {
-            this.speed *= 0.98;
+            this.speed *= 0.90;
         }
         
         // Accélération avec courbe progressive comme pour le joueur
