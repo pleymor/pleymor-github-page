@@ -183,10 +183,10 @@
         </div>
         
         <div id="winner">
-            <div id="winnerText"></div>
-            <button onclick="location.reload()">Rejouer</button>
+            <div id="winnerText"></div>            <button onclick="location.reload()">Rejouer</button>
         </div>
-          <div id="controls">
+        
+        <div id="controls">
             Contrôles: ↑↓ Accélération/Frein • ←→ Direction<br>
             <button id="musicToggle" onclick="toggleMusic()">🔇 Désactiver Musique</button>
             <button onclick="changeVolume(-0.1)">🔉 Volume -</button>
@@ -830,8 +830,7 @@
                 musicGenerator.stopMusic();
                 musicGenerator.playEffect('victory');
             }        }
-        
-        // Fonctions de contrôle de la musique
+          // Fonctions de contrôle de la musique
         function toggleMusic() {
             const button = document.getElementById('musicToggle');
             
@@ -842,13 +841,19 @@
             if (musicEnabled) {
                 musicEnabled = false;
                 button.textContent = '🎵 Activer Musique';
-                musicGenerator.stopMusic();
+                
+                // Arrêter immédiatement la musique
+                if (musicGenerator) {
+                    musicGenerator.stopMusic();
+                    console.log('Musique désactivée');
+                }
             } else {
                 musicEnabled = true;
                 button.textContent = '🔇 Désactiver Musique';
-                
-                if (gameStarted) {
+                  // Redémarrer la musique si le jeu est en cours
+                if (gameStarted && musicGenerator) {
                     musicGenerator.startRaceMusic();
+                    console.log('Musique réactivée');
                 }
             }
         }

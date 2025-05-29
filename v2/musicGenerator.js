@@ -1,12 +1,13 @@
 // Générateur de musique aléatoire pour le jeu de karting
-class MusicGenerator {
-    constructor() {
+class MusicGenerator {    constructor() {
         this.audioContext = null;
         this.isPlaying = false;
         this.currentTrack = null;
         this.masterVolume = 0.3;
         this.tempo = 120; // BPM
         this.noteTime = (60 / this.tempo) / 4; // Durée d'une note (16ème)
+        this.sequenceTimeout = null; // Pour pouvoir annuler les séquences programmées
+        this.activeNodes = []; // Suivi de tous les nodes audio actifs
         
         // Gammes musicales pour la génération
         this.scales = {
@@ -65,17 +66,28 @@ class MusicGenerator {
         gainNode.gain.linearRampToValueAtTime(sustain, startTime + attack + decay);
         gainNode.gain.setValueAtTime(sustain, startTime + duration - release);
         gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
-        
-        // Connexions
+          // Connexions
         oscillator.connect(filterNode);
         filterNode.connect(gainNode);
         gainNode.connect(this.audioContext.destination);
+        
+        // Enregistrer les nodes actifs pour pouvoir les arrêter
+        const nodeGroup = { oscillator, gainNode, filterNode };
+        this.activeNodes.push(nodeGroup);
         
         // Démarrage et arrêt
         oscillator.start(startTime);
         oscillator.stop(startTime + duration);
         
-        return { oscillator, gainNode, filterNode };
+        // Nettoyer la liste des nodes actifs quand l'oscillateur s'arrête
+        oscillator.onended = () => {
+            const index = this.activeNodes.indexOf(nodeGroup);
+            if (index > -1) {
+                this.activeNodes.splice(index, 1);
+            }
+        };
+        
+        return nodeGroup;
     }
     
     // Générer une mélodie aléatoire
@@ -189,13 +201,24 @@ class MusicGenerator {
             gainNode.gain.setValueAtTime(0, startTime);
             gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.01);
             gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-            
-            noise.connect(filterNode);
+              noise.connect(filterNode);
             filterNode.connect(gainNode);
             gainNode.connect(this.audioContext.destination);
             
+            // Enregistrer les nodes actifs
+            const nodeGroup = { source: noise, gainNode, filterNode };
+            this.activeNodes.push(nodeGroup);
+            
             noise.start(startTime);
             noise.stop(startTime + duration);
+            
+            // Nettoyer la liste quand le son s'arrête
+            noise.onended = () => {
+                const index = this.activeNodes.indexOf(nodeGroup);
+                if (index > -1) {
+                    this.activeNodes.splice(index, 1);
+                }
+            };
         } else {
             oscillator.type = type === 'kick' ? 'sine' : 'triangle';
             oscillator.frequency.setValueAtTime(freq, startTime);
@@ -212,8 +235,20 @@ class MusicGenerator {
             filterNode.connect(gainNode);
             gainNode.connect(this.audioContext.destination);
             
+            // Enregistrer les nodes actifs
+            const nodeGroup = { oscillator, gainNode, filterNode };
+            this.activeNodes.push(nodeGroup);
+            
             oscillator.start(startTime);
             oscillator.stop(startTime + duration);
+            
+            // Nettoyer la liste quand le son s'arrête
+            oscillator.onended = () => {
+                const index = this.activeNodes.indexOf(nodeGroup);
+                if (index > -1) {
+                    this.activeNodes.splice(index, 1);
+                }
+            };
         }
     }
       // Jouer une séquence musicale complète
@@ -253,10 +288,9 @@ class MusicGenerator {
             if (beat.hihat) this.createDrumSound('hihat', currentTime, beat.volume * 0.5);
             currentTime += beat.duration;
         });
-        
-        // Programmer la prochaine séquence
+          // Programmer la prochaine séquence
         const sequenceDuration = melody.reduce((total, note) => total + note.duration, 0);
-        setTimeout(() => {
+        this.sequenceTimeout = setTimeout(() => {
             this.isPlaying = false;
             if (this.currentTrack === 'game') {
                 this.playSequence(); // Boucle continue pendant le jeu
@@ -284,13 +318,56 @@ class MusicGenerator {
         if (!this.isPlaying) {
             this.playSequence();
         }
-    }
-    
-    // Arrêter la musique
+    }    // Arrêter la musique
     stopMusic() {
         this.currentTrack = null;
         this.isPlaying = false;
-    }    // Vérifier et activer l'AudioContext si nécessaire
+        
+        // Annuler les séquences programmées
+        if (this.sequenceTimeout) {
+            clearTimeout(this.sequenceTimeout);
+            this.sequenceTimeout = null;
+        }
+        
+        // Arrêter immédiatement tous les sons en cours
+        this.stopAllActiveSounds();
+        
+        console.log('Musique arrêtée immédiatement');
+    }
+    
+    // Nouvelle méthode pour arrêter tous les sons actifs
+    stopAllActiveSounds() {
+        if (!this.audioContext) return;
+        
+        const currentTime = this.audioContext.currentTime;
+        
+        // Arrêter tous les nodes actifs
+        this.activeNodes.forEach(nodeGroup => {
+            try {
+                // Couper le gain immédiatement pour un arrêt silencieux
+                if (nodeGroup.gainNode) {
+                    nodeGroup.gainNode.gain.cancelScheduledValues(currentTime);
+                    nodeGroup.gainNode.gain.setValueAtTime(0, currentTime);
+                }
+                
+                // Arrêter l'oscillateur ou la source audio
+                if (nodeGroup.oscillator && nodeGroup.oscillator.stop) {
+                    nodeGroup.oscillator.stop(currentTime + 0.01);
+                }
+                if (nodeGroup.source && nodeGroup.source.stop) {
+                    nodeGroup.source.stop(currentTime + 0.01);
+                }
+            } catch (error) {
+                // Ignorer les erreurs si le node est déjà arrêté
+                console.debug('Node déjà arrêté:', error);
+            }
+        });
+        
+        // Vider la liste des nodes actifs
+        this.activeNodes = [];
+        
+        console.log('Tous les sons actifs arrêtés');
+    }// Vérifier et activer l'AudioContext si nécessaire
     ensureAudioContextActive() {
         if (!this.audioContext) return false;
         
