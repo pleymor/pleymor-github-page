@@ -185,4 +185,9 @@ class Game {
     getScene() { return this.scene; }
     getTrack() { return this.track; }
     getPlayerLaps() { return this.playerLaps; }
+    
+    // Retourne tous les karts (joueur + IA) pour les collisions
+    getAllKarts() {
+        return [this.playerKart, ...this.aiKarts];
+    }
 }

@@ -249,14 +249,17 @@ class Kart {
         const maxVelocityMagnitude = this.maxSpeed * 1.8;
         if (this.velocity.length() > maxVelocityMagnitude) {
             this.velocity.normalize().multiplyScalar(maxVelocityMagnitude);
-        }
-
-        // Vérifier les collisions avec les arbres avant de mettre à jour la position
+        }        // Vérifier les collisions avant de mettre à jour la position
         const newPosition = this.position.clone().add(this.velocity);
+        
+        // Collision avec les arbres
         const collidedTree = this.game.getTrack().checkTreeCollision(newPosition, 1.5);
         
+        // Collision avec les autres karts
+        const collidedKart = this.checkKartCollision(newPosition, 1.8);
+        
         if (collidedTree) {
-            // Collision détectée - calculer la direction de rebond
+            // Collision avec un arbre
             const collisionDirection = new THREE.Vector3()
                 .subVectors(this.position, collidedTree.position)
                 .normalize();
@@ -275,10 +278,79 @@ class Kart {
                 const pushDirection = collisionDirection.clone().multiplyScalar(pushDistance);
                 this.position.add(pushDirection);
             }
+        } else if (collidedKart) {
+            // Collision avec un autre kart
+            this.handleKartCollision(collidedKart);
         } else {
             // Pas de collision - mise à jour normale de la position
             this.position.add(this.velocity);
+        }    }
+
+    checkKartCollision(newPosition, kartRadius = 1.8) {
+        // Obtenir tous les karts du jeu
+        const allKarts = this.game.getAllKarts();
+        
+        for (let otherKart of allKarts) {
+            // Ne pas vérifier la collision avec soi-même
+            if (otherKart === this) continue;
+            
+            const distance = newPosition.distanceTo(otherKart.position);
+            if (distance < kartRadius) {
+                return otherKart;
+            }
         }
+        return null;
+    }
+    
+    handleKartCollision(otherKart) {
+        // Calculer la direction de collision
+        const collisionDirection = new THREE.Vector3()
+            .subVectors(this.position, otherKart.position)
+            .normalize();
+        
+        // Calculer les vitesses relatives
+        const relativeVelocity = this.velocity.clone().sub(otherKart.velocity);
+        const collisionSpeed = relativeVelocity.dot(collisionDirection);
+        
+        // Ne traiter que les collisions frontales (objets qui se rapprochent)
+        if (collisionSpeed > 0) return;
+        
+        // Facteur d'élasticité (0 = collision parfaitement inélastique, 1 = parfaitement élastique)
+        const elasticity = 0.6;
+        
+        // Masses des karts (on peut les considérer égales)
+        const mass1 = 1;
+        const mass2 = 1;
+        
+        // Calcul de l'impulsion de collision
+        const impulse = -(1 + elasticity) * collisionSpeed / (mass1 + mass2);
+        
+        // Appliquer l'impulsion aux deux karts
+        const impulseVector = collisionDirection.clone().multiplyScalar(impulse);
+        
+        // Mise à jour des vélocités
+        this.velocity.add(impulseVector.clone().multiplyScalar(mass2));
+        otherKart.velocity.sub(impulseVector.clone().multiplyScalar(mass1));
+        
+        // Réduction de vitesse due à la collision
+        this.speed *= 0.8;
+        otherKart.speed *= 0.8;
+        
+        // Séparer les karts pour éviter qu'ils restent coincés
+        const separationDistance = 3.6; // 2 * kartRadius
+        const currentDistance = this.position.distanceTo(otherKart.position);
+        const overlap = separationDistance - currentDistance;
+        
+        if (overlap > 0) {
+            const separationVector = collisionDirection.clone().multiplyScalar(overlap * 0.5);
+            this.position.add(separationVector);
+            otherKart.position.sub(separationVector);
+        }
+        
+        // Ajouter un léger effet de rotation due à la collision
+        const rotationEffect = Math.sign(collisionDirection.cross(new THREE.Vector3(0, 1, 0)).y) * 0.1;
+        this.angularVelocity += rotationEffect;
+        otherKart.angularVelocity -= rotationEffect;
     }
 
     checkLapProgress() {
