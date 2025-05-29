@@ -39,11 +39,8 @@ class Game {
 
         // Démarrer la boucle de jeu
         this.animate();
-    }
-
-    setupScene() {
+    }    setupScene() {
         this.scene = new THREE.Scene();
-        this.scene.fog = new THREE.Fog(0x87CEEB, 50, 400);
 
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         // Position initiale temporaire - sera mise à jour après création des karts
