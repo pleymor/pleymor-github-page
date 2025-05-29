@@ -689,22 +689,32 @@
             const redLight = document.getElementById('redLight');
             const yellowLight = document.getElementById('yellowLight');
             const greenLight = document.getElementById('greenLight');
-            const trafficLight = document.getElementById('trafficLight');
-              // Initialiser le générateur de musique
+            const trafficLight = document.getElementById('trafficLight');            // Initialiser le générateur de musique et s'assurer que l'AudioContext est activé
             if (!musicGenerator) {
                 musicGenerator = window.musicGenerator;
             }
             
-            // Séquence: Rouge
+            // S'assurer que l'AudioContext est bien activé avant les sons
+            if (musicGenerator && musicGenerator.audioContext) {
+                if (musicGenerator.audioContext.state === 'suspended') {
+                    musicGenerator.audioContext.resume().then(() => {
+                        console.log('AudioContext activé pour la séquence des feux');
+                    });
+                }
+            }
+            
+            // Séquence: Rouge (délai légèrement augmenté pour s'assurer que l'AudioContext est prêt)
             setTimeout(() => {
                 redLight.classList.remove('off');
                 redLight.classList.add('red');
                 
-                // Jouer le son du feu rouge
+                // Jouer le son du feu rouge avec un petit délai supplémentaire
                 if (musicGenerator && musicEnabled) {
-                    musicGenerator.playEffect('redLight');
+                    setTimeout(() => {
+                        musicGenerator.playEffect('redLight');
+                    }, 100); // Petit délai pour s'assurer que l'AudioContext est activé
                 }
-            }, 1000);
+            }, 1200); // Délai légèrement augmenté
             
             // Séquence: Rouge + Jaune
             setTimeout(() => {

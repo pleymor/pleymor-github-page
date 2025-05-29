@@ -37,10 +37,14 @@ class MusicGenerator {    constructor() {
         const semitone = this.currentScale[note % this.currentScale.length];
         const octaveShift = Math.floor(note / this.currentScale.length) + octave;
         return this.baseFreq * Math.pow(2, (semitone + octaveShift * 12) / 12);
-    }
-      // Créer un oscillateur avec enveloppe ADSR
+    }    // Créer un oscillateur avec enveloppe ADSR
     createTone(freq, startTime, duration, type = 'sine', volume = 0.1) {
-        if (!this.audioContext || !this.ensureAudioContextActive()) return;
+        if (!this.audioContext) return;
+        
+        // Activer l'AudioContext de manière synchrone si possible
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
         
         const oscillator = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
@@ -153,10 +157,14 @@ class MusicGenerator {    constructor() {
         }
         
         return drums;
-    }
-      // Créer des sons de percussion
+    }    // Créer des sons de percussion
     createDrumSound(type, startTime, volume = 0.1) {
-        if (!this.audioContext || !this.ensureAudioContextActive()) return;
+        if (!this.audioContext) return;
+        
+        // Activer l'AudioContext de manière synchrone si possible
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
         
         let freq, duration, filterFreq;
         
@@ -250,10 +258,14 @@ class MusicGenerator {    constructor() {
                 }
             };
         }
-    }
-      // Jouer une séquence musicale complète
+    }    // Jouer une séquence musicale complète
     playSequence() {
-        if (!this.audioContext || this.isPlaying || !this.ensureAudioContextActive()) return;
+        if (!this.audioContext || this.isPlaying) return;
+        
+        // Activer l'AudioContext de manière synchrone si possible
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
         
         this.isPlaying = true;
         const startTime = this.audioContext.currentTime + 0.1;
@@ -367,27 +379,31 @@ class MusicGenerator {    constructor() {
         this.activeNodes = [];
         
         console.log('Tous les sons actifs arrêtés');
-    }// Vérifier et activer l'AudioContext si nécessaire
-    ensureAudioContextActive() {
+    }    // Vérifier et activer l'AudioContext si nécessaire
+    async ensureAudioContextActive() {
         if (!this.audioContext) return false;
         
         if (this.audioContext.state === 'suspended') {
-            this.audioContext.resume().then(() => {
+            try {
+                await this.audioContext.resume();
                 console.log('AudioContext activé automatiquement');
-            });
-            return false; // Son ne sera pas joué immédiatement
+            } catch (error) {
+                console.error('Erreur lors de l\'activation de l\'AudioContext:', error);
+                return false;
+            }
         }
         
         return this.audioContext.state === 'running';
-    }
-
-      // Jouer un son d'effet spécial
+    }    // Jouer un son d'effet spécial
     playEffect(type) {
-        if (!this.audioContext || !this.ensureAudioContextActive()) return;
+        if (!this.audioContext) return;
         
-        const startTime = this.audioContext.currentTime;
+        // Activer l'AudioContext de manière synchrone si possible
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
         
-        switch (type) {
+        const startTime = this.audioContext.currentTime;        switch (type) {
             case 'start':
                 // Son de départ de course
                 this.createTone(440, startTime, 0.5, 'square', 0.15);
