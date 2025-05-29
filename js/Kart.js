@@ -15,9 +15,7 @@ class Kart {
         // Propriétés de l'environnement
         this.friction = 0.95;
         this.airResistance = 0.99;
-        this.driftFactor = 0.08;
-
-        // Variables de position et de mouvement
+        this.driftFactor = 0.08;        // Variables de position et de mouvement
         this.position = new THREE.Vector3();
         this.velocity = new THREE.Vector3();
         this.rotation = 0;
@@ -32,6 +30,11 @@ class Kart {
         this.lateralVelocity = new THREE.Vector3();
         this.targetRotation = 0;
         this.steerInput = 0;
+
+        // Variables pour les effets de dérapage
+        this.isDrifting = false;
+        this.driftEffects = null;
+        this.driftAudioPlaying = false;
 
         this.createModel(color);
     }
@@ -67,6 +70,46 @@ class Kart {
         });
 
         this.game.getScene().add(this.group);
+        
+        // Créer le système de particules pour la fumée de dérapage
+        this.createDriftEffects();
+    }
+
+    createDriftEffects() {
+        // Géométrie des particules
+        const particleCount = 50;
+        const particles = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const velocities = new Float32Array(particleCount * 3);
+        const ages = new Float32Array(particleCount);
+
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3] = 0;
+            positions[i * 3 + 1] = 0;
+            positions[i * 3 + 2] = 0;
+            velocities[i * 3] = 0;
+            velocities[i * 3 + 1] = 0;
+            velocities[i * 3 + 2] = 0;
+            ages[i] = 0;
+        }
+
+        particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particles.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+        particles.setAttribute('age', new THREE.BufferAttribute(ages, 1));
+
+        // Matériau des particules
+        const particleMaterial = new THREE.PointsMaterial({
+            color: 0x888888,
+            size: 0.8,
+            transparent: true,
+            opacity: 0.6,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+
+        this.driftEffects = new THREE.Points(particles, particleMaterial);
+        this.driftEffects.visible = false;
+        this.game.getScene().add(this.driftEffects);
     }
 
     setPosition(position) {
@@ -89,10 +132,9 @@ class Kart {
             this.handlePlayerInput(inputs);
         } else if (!this.isPlayer) {
             this.handleAI();
-        }
-
-        this.applyPhysics();
+        }        this.applyPhysics();
         this.updateTransform();
+        this.updateDriftEffects();
         this.checkLapProgress();
     }
 
@@ -129,12 +171,41 @@ class Kart {
         // Application progressive de la rotation
         this.angularVelocity += this.steerInput * this.turnSpeed * 0.15;
         this.angularVelocity *= 0.75; // Amortissement plus fort
-        this.rotation += this.angularVelocity;
+        this.rotation += this.angularVelocity;        // Gestion du dérapage avec la barre d'espace
+        if (inputs.drift && Math.abs(this.speed) > this.maxSpeed * 0.3) {
+            // Mode dérapage activé - réduire la traction pour permettre le glissement
+            this.traction = 0.4; // Traction très réduite pour dérapage
+            this.driftFactor = 0.25; // Augmenter l'effet de dérapage
+            
+            // Légère perte de vitesse pendant le dérapage
+            this.speed *= 0.985;
+            
+            // Améliorer la capacité de virage en dérapage
+            this.turnSpeed = Math.max(this.turnSpeed * 1.5, 0.1);
+            
+            // Activer les effets de dérapage
+            if (!this.isDrifting) {
+                this.isDrifting = true;
+                this.startDriftEffects();
+            }
+        } else {
+            // Mode normal - restaurer les valeurs par défaut
+            this.traction = 0.95;
+            this.driftFactor = 0.08;
+            
+            // Désactiver les effets de dérapage
+            if (this.isDrifting) {
+                this.isDrifting = false;
+                this.stopDriftEffects();
+            }
+        }
 
         // Dérapage naturel à haute vitesse
         if (Math.abs(this.steerInput) > 0.5 && Math.abs(this.speed) > this.maxSpeed * 0.6) {
             this.speed *= 0.98; // Légère perte de vitesse en virage serré
-        }        // Pas d'entrée - décélération naturelle avec inertie
+        }
+
+        // Pas d'entrée - décélération naturelle avec inertie
         if (!inputs.up && !inputs.down) {
             // Décélération naturelle modérée
             this.speed *= this.airResistance;
@@ -377,8 +448,7 @@ class Kart {
 
         this.trackProgress = closestIndex;
         this.lastCheckpoint = closestIndex;
-    }
-    updateTransform() {
+    }    updateTransform() {
         this.group.position.copy(this.position);
         this.group.rotation.y = this.rotation;
 
@@ -387,17 +457,124 @@ class Kart {
         this.wheels.forEach(wheel => {
             wheel.rotation.x += wheelRotationSpeed;
         });
-        // Incliner légèrement le kart dans les virages pour plus de réalisme
-        const tiltAmount = this.angularVelocity * 0.15;
+        
+        // Incliner le kart dans les virages pour plus de réalisme
+        let tiltAmount = this.angularVelocity * 0.15;
+        
+        // Incliner davantage pendant le dérapage si c'est le joueur
+        if (this.isPlayer && this.traction < 0.5) { // En mode dérapage
+            tiltAmount *= 2.5; // Inclinaison plus prononcée
+        }
+        
         this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, tiltAmount, 0.08);
 
         // Limiter les mouvements erratiques après collision
         if (Math.abs(this.velocity.x) > 3 || Math.abs(this.velocity.z) > 3) {
             this.velocity.multiplyScalar(0.7);
         }
+    }    destroy() {
+        // Nettoyer les effets de dérapage
+        this.stopDriftEffects();
+        
+        if (this.driftEffects) {
+            this.game.getScene().remove(this.driftEffects);
+            this.driftEffects.geometry.dispose();
+            this.driftEffects.material.dispose();
+        }
+        
+        // Nettoyer le modèle du kart
+        if (this.group) {
+            this.game.getScene().remove(this.group);
+        }
     }
 
     getSpeed() {
         return Math.abs(this.speed); // Convertir en km/h pour l'affichage
+    }
+
+    startDriftEffects() {
+        if (!this.isPlayer) return; // Effets seulement pour le joueur
+        
+        // Afficher les particules de fumée
+        if (this.driftEffects) {
+            this.driftEffects.visible = true;
+        }
+        
+        // Jouer l'effet audio de dérapage
+        if (this.game.audioManager && !this.driftAudioPlaying) {
+            this.game.audioManager.playEffect('drift');
+            this.driftAudioPlaying = true;
+            
+            // Répéter l'effet audio tant que le dérapage continue
+            this.driftAudioInterval = setInterval(() => {
+                if (this.isDrifting) {
+                    this.game.audioManager.playEffect('drift');
+                }
+            }, 500);
+        }
+    }
+
+    stopDriftEffects() {
+        // Masquer les particules de fumée
+        if (this.driftEffects) {
+            this.driftEffects.visible = false;
+        }
+        
+        // Arrêter l'effet audio
+        if (this.driftAudioInterval) {
+            clearInterval(this.driftAudioInterval);
+            this.driftAudioInterval = null;
+        }
+        this.driftAudioPlaying = false;
+    }
+
+    updateDriftEffects() {
+        if (!this.driftEffects || !this.isDrifting) return;
+
+        const positions = this.driftEffects.geometry.attributes.position.array;
+        const velocities = this.driftEffects.geometry.attributes.velocity.array;
+        const ages = this.driftEffects.geometry.attributes.age.array;
+        const particleCount = positions.length / 3;
+
+        for (let i = 0; i < particleCount; i++) {
+            const i3 = i * 3;
+            
+            // Vieillissement des particules
+            ages[i] += 0.02;
+            
+            // Si la particule est trop vieille, la réinitialiser
+            if (ages[i] > 1.0) {
+                // Position initiale près des roues arrière
+                positions[i3] = this.position.x + (Math.random() - 0.5) * 2;
+                positions[i3 + 1] = this.position.y + 0.1;
+                positions[i3 + 2] = this.position.z + (Math.random() - 0.5) * 2;
+                
+                // Vélocité aléatoire vers l'arrière et vers le haut
+                velocities[i3] = (Math.random() - 0.5) * 0.2;
+                velocities[i3 + 1] = Math.random() * 0.1;
+                velocities[i3 + 2] = (Math.random() - 0.5) * 0.2;
+                
+                ages[i] = 0;
+            } else {
+                // Mettre à jour la position en fonction de la vélocité
+                positions[i3] += velocities[i3];
+                positions[i3 + 1] += velocities[i3 + 1];
+                positions[i3 + 2] += velocities[i3 + 2];
+                
+                // Appliquer la gravité et la résistance de l'air
+                velocities[i3] *= 0.98;
+                velocities[i3 + 1] -= 0.002; // Gravité
+                velocities[i3 + 2] *= 0.98;
+            }
+        }
+
+        // Marquer les attributs comme modifiés
+        this.driftEffects.geometry.attributes.position.needsUpdate = true;
+        this.driftEffects.geometry.attributes.velocity.needsUpdate = true;
+        this.driftEffects.geometry.attributes.age.needsUpdate = true;
+        
+        // Ajuster l'opacité en fonction de la vitesse de dérapage
+        const driftIntensity = Math.min(Math.abs(this.speed) / this.maxSpeed, 1.0);
+        this.driftEffects.material.opacity = 0.3 + driftIntensity * 0.3;
     }
 }

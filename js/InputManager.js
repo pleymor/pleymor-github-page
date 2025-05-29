@@ -1,11 +1,11 @@
 // InputManager.js - Gestionnaire des entrées utilisateur
-class InputManager {
-    constructor() {
+class InputManager {    constructor() {
         this.keys = {
             up: false,
             down: false,
             left: false,
-            right: false
+            right: false,
+            drift: false
         };
         
         this.setupEventListeners();
@@ -19,16 +19,14 @@ class InputManager {
         document.addEventListener('keyup', (event) => {
             this.handleKeyUp(event);
         });
-        
-        // Empêcher le défilement de la page avec les flèches
+          // Empêcher le défilement de la page avec les flèches et l'espace
         document.addEventListener('keydown', (event) => {
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(event.code)) {
                 event.preventDefault();
             }
         });
     }
-    
-    handleKeyDown(event) {
+      handleKeyDown(event) {
         switch(event.code) {
             case 'ArrowUp':
             case 'KeyW':
@@ -46,10 +44,12 @@ class InputManager {
             case 'KeyD':
                 this.keys.right = true;
                 break;
+            case 'Space':
+                this.keys.drift = true;
+                break;
         }
     }
-    
-    handleKeyUp(event) {
+      handleKeyUp(event) {
         switch(event.code) {
             case 'ArrowUp':
             case 'KeyW':
@@ -67,28 +67,31 @@ class InputManager {
             case 'KeyD':
                 this.keys.right = false;
                 break;
+            case 'Space':
+                this.keys.drift = false;
+                break;
         }
     }
-    
-    getInputs() {
+      getInputs() {
         return {
             up: this.keys.up,
             down: this.keys.down,
             left: this.keys.left,
-            right: this.keys.right
+            right: this.keys.right,
+            drift: this.keys.drift
         };
     }
     
     isKeyPressed(key) {
         return this.keys[key] || false;
     }
-    
-    reset() {
+      reset() {
         this.keys = {
             up: false,
             down: false,
             left: false,
-            right: false
+            right: false,
+            drift: false
         };
     }
 }

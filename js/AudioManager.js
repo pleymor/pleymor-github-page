@@ -117,13 +117,16 @@ class AudioManager {
                 break;
             case 'collision':
                 this.createDrumSound('snare', startTime, 0.2);
-                break;
-            case 'victory':
+                break;            case 'victory':
                 const victoryNotes = [0, 2, 4, 7, 9];
                 victoryNotes.forEach((note, index) => {
                     const freq = this.noteToFreq(note, 2);
                     this.createTone(freq, startTime + index * 0.15, 0.3, 'sine', 0.12);
                 });
+                break;
+            case 'drift':
+                // Son de pneus qui crissent
+                this.createDriftSound(startTime, 0.5);
                 break;
         }
     }
@@ -271,6 +274,66 @@ class AudioManager {
                 }
             };
         }
+    }
+
+    createDriftSound(startTime, duration) {
+        if (!this.audioContext) return;
+
+        // Créer un bruit blanc filtré pour simuler le crissement des pneus
+        const bufferSize = this.audioContext.sampleRate * duration;
+        const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+        const output = buffer.getChannelData(0);
+
+        // Générer du bruit blanc
+        for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = this.audioContext.createBufferSource();
+        noise.buffer = buffer;
+
+        // Filtres pour créer l'effet de crissement
+        const highpassFilter = this.audioContext.createBiquadFilter();
+        highpassFilter.type = 'highpass';
+        highpassFilter.frequency.setValueAtTime(1000, startTime);
+        highpassFilter.Q.setValueAtTime(1, startTime);
+
+        const bandpassFilter = this.audioContext.createBiquadFilter();
+        bandpassFilter.type = 'bandpass';
+        bandpassFilter.frequency.setValueAtTime(2500, startTime);
+        bandpassFilter.Q.setValueAtTime(10, startTime);
+
+        const gainNode = this.audioContext.createGain();
+        
+        // Volume ajusté avec le volume maître
+        const adjustedVolume = 0.08 * this.masterVolume;
+
+        // Enveloppe pour un effet de fade in/out
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(adjustedVolume, startTime + 0.1);
+        gainNode.gain.setValueAtTime(adjustedVolume, startTime + duration - 0.1);
+        gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+
+        // Connecter la chaîne audio
+        noise.connect(highpassFilter);
+        highpassFilter.connect(bandpassFilter);
+        bandpassFilter.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+
+        const nodeGroup = { source: noise, gainNode, highpassFilter, bandpassFilter };
+        this.activeNodes.push(nodeGroup);
+
+        noise.start(startTime);
+        noise.stop(startTime + duration);
+
+        noise.onended = () => {
+            const index = this.activeNodes.indexOf(nodeGroup);
+            if (index > -1) {
+                this.activeNodes.splice(index, 1);
+            }
+        };
+
+        return nodeGroup;
     }
 
     noteToFreq(note, octave = 0) {
