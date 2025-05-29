@@ -1,16 +1,20 @@
 // Track.js - Classe pour la piste et le terrain
-class Track {    constructor() {
+class Track {
+    constructor(game = null) {
+        this.game = game;
         this.trackPoints = [];
         this.barriers = [];
         this.trees = [];
         this.trackMesh = null;
         this.terrainMesh = null;
-    }
-      async create() {
+        this.startLine = null;
+        this.finishLine = null;
+    }    async create() {
         this.generateTrackPoints();
         this.createTrackGeometry();
         this.createTerrain();
         this.generateTrees();
+        this.createStartLine();
     }
     
     generateTrackPoints() {
@@ -73,8 +77,7 @@ class Track {    constructor() {
         this.trackMesh = new THREE.Mesh(trackGeometry, trackMaterial);
         this.trackMesh.receiveShadow = true;
     }
-    
-    createTerrain() {
+      createTerrain() {
         const terrainSize = 800;
         const segments = 100;
         const terrainGeometry = new THREE.PlaneGeometry(terrainSize, terrainSize, segments, segments);
@@ -97,10 +100,133 @@ class Track {    constructor() {
         this.baseMesh.position.y = -0.2;
         this.baseMesh.receiveShadow = true;
     }
-      addToScene(scene) {
+
+    createStartLine() {
+        // Position de départ - premier point de la piste
+        const startPoint = this.trackPoints[0];
+        const nextPoint = this.trackPoints[1];
+
+        // Calculer la direction et la perpendiculaire
+        const direction = new THREE.Vector3().subVectors(nextPoint, startPoint).normalize();
+        const perpendicular = new THREE.Vector3(-direction.z, 0, direction.x);
+
+        // Largeur de la ligne (même largeur que la piste)
+        const trackWidth = 36;
+
+        // Créer la ligne de départ/arrivée
+        // Correction : la ligne doit être perpendiculaire à la piste
+        // On utilise la direction pour l'orientation, pas la perpendiculaire
+        this.createFinishLineVisual(startPoint, direction, trackWidth);
+
+        // Créer des drapeaux à damier (toujours avec la perpendiculaire)
+        this.createCheckeredFlags(startPoint, perpendicular, trackWidth);
+    }
+
+    createFinishLineVisual(position, perpendicular, width) {
+        // Créer une ligne à damier noir et blanc
+        const lineGeometry = new THREE.PlaneGeometry(width, 4);
+        
+        // Créer une texture à damier
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 8;
+        const ctx = canvas.getContext('2d');
+        
+        // Dessiner le motif damier
+        const squareSize = 8;
+        for (let i = 0; i < canvas.width; i += squareSize) {
+            const isWhite = Math.floor(i / squareSize) % 2 === 0;
+            ctx.fillStyle = isWhite ? '#ffffff' : '#000000';
+            ctx.fillRect(i, 0, squareSize, canvas.height);
+        }
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        
+        const lineMaterial = new THREE.MeshLambertMaterial({ 
+            map: texture,
+            transparent: true,
+            opacity: 0.9
+        });
+        
+        this.startLine = new THREE.Mesh(lineGeometry, lineMaterial);
+        this.startLine.position.copy(position);
+        this.startLine.position.y = 0.02; // Légèrement au-dessus de la piste
+        this.startLine.rotation.x = -Math.PI / 2;
+        
+        // Orienter la ligne perpendiculairement à la direction de la piste
+        const angle = Math.atan2(perpendicular.z, perpendicular.x);
+        this.startLine.rotation.z = angle;
+    }
+
+    createCheckeredFlags(position, perpendicular, width) {
+        // Créer des drapeaux à damier de chaque côté de la piste
+        const flagPositions = [
+            position.clone().add(perpendicular.clone().multiplyScalar(width / 2 + 5)),
+            position.clone().add(perpendicular.clone().multiplyScalar(-width / 2 - 5))
+        ];
+
+        this.flags = [];
+        
+        flagPositions.forEach((flagPos, index) => {
+            const flagGroup = new THREE.Group();
+            
+            // Mât du drapeau
+            const poleGeometry = new THREE.CylinderGeometry(0.1, 0.1, 12);
+            const poleMaterial = new THREE.MeshLambertMaterial({ color: 0x654321 });
+            const pole = new THREE.Mesh(poleGeometry, poleMaterial);
+            pole.position.y = 6;
+            pole.castShadow = true;
+            flagGroup.add(pole);
+            
+            // Drapeau à damier
+            const flagGeometry = new THREE.PlaneGeometry(8, 6);
+            
+            // Créer texture damier pour le drapeau
+            const flagCanvas = document.createElement('canvas');
+            flagCanvas.width = 64;
+            flagCanvas.height = 48;
+            const flagCtx = flagCanvas.getContext('2d');
+            
+            const checkSize = 8;
+            for (let x = 0; x < flagCanvas.width; x += checkSize) {
+                for (let y = 0; y < flagCanvas.height; y += checkSize) {
+                    const isWhite = (Math.floor(x / checkSize) + Math.floor(y / checkSize)) % 2 === 0;
+                    flagCtx.fillStyle = isWhite ? '#ffffff' : '#000000';
+                    flagCtx.fillRect(x, y, checkSize, checkSize);
+                }
+            }
+            
+            const flagTexture = new THREE.CanvasTexture(flagCanvas);
+            const flagMaterial = new THREE.MeshLambertMaterial({ 
+                map: flagTexture,
+                side: THREE.DoubleSide
+            });
+            
+            const flag = new THREE.Mesh(flagGeometry, flagMaterial);
+            flag.position.set(4, 9, 0);
+            flag.castShadow = true;
+            flagGroup.add(flag);
+            
+            // Positionner le groupe
+            flagGroup.position.copy(flagPos);
+            flagGroup.position.y = 0;
+            
+            this.flags.push(flagGroup);
+        });
+    }    addToScene(scene) {
         if (this.trackMesh) scene.add(this.trackMesh);
         if (this.terrainMesh) scene.add(this.terrainMesh);
         if (this.baseMesh) scene.add(this.baseMesh);
+        
+        // Ajouter la ligne de départ/arrivée
+        if (this.startLine) scene.add(this.startLine);
+        
+        // Ajouter les drapeaux
+        if (this.flags) {
+            this.flags.forEach(flag => scene.add(flag));
+        }
         
         // Ajouter les arbres à la scène
         this.trees.forEach(tree => {
@@ -313,6 +439,74 @@ class Track {    constructor() {
             }
         }
         return null;
+    }
+
+    checkLapCompletion(kartPosition, kartRadius = 2) {
+        if (!this.startLine) return false;
+        
+        // Vérifier si le kart passe près de la ligne de départ/arrivée
+        const startPoint = this.trackPoints[0];
+        const distance = kartPosition.distanceTo(startPoint);
+        
+        // Si le kart est proche de la ligne de départ (dans un rayon de 10 unités)
+        if (distance < 10) {
+            // Animation de passage de ligne
+            this.animateFinishLine();
+            return true;
+        }
+        
+        return false;
+    }
+
+    animateFinishLine() {
+        if (!this.startLine) return;
+        
+        // Animation de scintillement de la ligne de départ
+        const originalOpacity = this.startLine.material.opacity;
+        
+        // Séquence d'animation
+        let flashCount = 0;
+        const maxFlashes = 6;
+        
+        const flash = () => {
+            if (flashCount >= maxFlashes) {
+                this.startLine.material.opacity = originalOpacity;
+                return;
+            }
+            
+            this.startLine.material.opacity = flashCount % 2 === 0 ? 1.0 : 0.3;
+            flashCount++;
+            
+            setTimeout(flash, 150);
+        };
+        
+        flash();
+        
+        // Animer les drapeaux
+        if (this.flags) {
+            this.flags.forEach(flagGroup => {
+                const flag = flagGroup.children[1]; // Le drapeau est le 2ème enfant (après le mât)
+                if (flag) {
+                    // Animation de balancement
+                    const originalRotation = flag.rotation.z;
+                    let swayCount = 0;
+                    
+                    const sway = () => {
+                        if (swayCount >= 20) {
+                            flag.rotation.z = originalRotation;
+                            return;
+                        }
+                        
+                        flag.rotation.z = originalRotation + Math.sin(swayCount * 0.5) * 0.3;
+                        swayCount++;
+                        
+                        requestAnimationFrame(sway);
+                    };
+                    
+                    sway();
+                }
+            });
+        }
     }
       // Getters
     getTrackPoints() { return this.trackPoints; }

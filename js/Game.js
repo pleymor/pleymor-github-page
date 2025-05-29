@@ -21,14 +21,13 @@ class Game {
 
     async init() {
         this.setupScene();
-        this.setupLighting();
-
-        // Initialiser les managers
+        this.setupLighting();        // Initialiser les managers
         this.audioManager = new AudioManager(this);
         this.uiManager = new UIManager(this);
         this.inputManager = new InputManager();
+        
         // Créer les éléments de jeu
-        this.track = new Track();
+        this.track = new Track(this);
         await this.track.create();
         this.track.addToScene(this.scene);
 
