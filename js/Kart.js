@@ -245,14 +245,40 @@ class Kart {
         } else {
             this.position.y = terrainHeight + 0.5;
             this.velocity.y = 0;
-        }
-        // Appliquer la vélocité avec limitation pour éviter les mouvements trop rapides
+        }        // Appliquer la vélocité avec limitation pour éviter les mouvements trop rapides
         const maxVelocityMagnitude = this.maxSpeed * 1.8;
         if (this.velocity.length() > maxVelocityMagnitude) {
             this.velocity.normalize().multiplyScalar(maxVelocityMagnitude);
         }
 
-        this.position.add(this.velocity); // Mise à jour de la position avec un pas de temps fixe
+        // Vérifier les collisions avec les arbres avant de mettre à jour la position
+        const newPosition = this.position.clone().add(this.velocity);
+        const collidedTree = this.game.getTrack().checkTreeCollision(newPosition, 1.5);
+        
+        if (collidedTree) {
+            // Collision détectée - calculer la direction de rebond
+            const collisionDirection = new THREE.Vector3()
+                .subVectors(this.position, collidedTree.position)
+                .normalize();
+            
+            // Arrêter le kart et le faire rebondir légèrement
+            this.speed *= 0.3; // Réduction drastique de la vitesse
+            this.velocity.multiplyScalar(0.2); // Réduire la vélocité
+            
+            // Ajouter un rebond dans la direction opposée à l'arbre
+            const bounceForce = collisionDirection.multiplyScalar(2);
+            this.velocity.add(bounceForce);
+            
+            // Éviter que le kart reste coincé dans l'arbre
+            const pushDistance = (collidedTree.radius + 1.5) - this.position.distanceTo(collidedTree.position);
+            if (pushDistance > 0) {
+                const pushDirection = collisionDirection.clone().multiplyScalar(pushDistance);
+                this.position.add(pushDirection);
+            }
+        } else {
+            // Pas de collision - mise à jour normale de la position
+            this.position.add(this.velocity);
+        }
     }
 
     checkLapProgress() {
