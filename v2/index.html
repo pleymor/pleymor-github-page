@@ -380,35 +380,45 @@
             
             // Boucle de jeu
             animate();
-        }
-          function createTrack() {
-            // Générer les points de la piste de façon procédurale
-            const numPoints = 50;
-            const radius = 30;
+        }        function createTrack() {
+            // Générer les points de la piste de façon procédurale - circuit 30x plus long
+            const numPoints = 1500; // 30 fois plus de points (50 * 30)
+            const baseRadius = 150; // Rayon de base plus grand
             
             for (let i = 0; i < numPoints; i++) {
                 const angle = (i / numPoints) * Math.PI * 2;
-                const variation = Math.sin(angle * 3) * 5 + Math.cos(angle * 2) * 3;
-                const x = Math.cos(angle) * (radius + variation);
-                const z = Math.sin(angle) * (radius + variation);
+                
+                // Variations complexes pour créer un circuit plus intéressant
+                const majorVariation = Math.sin(angle * 0.5) * 80 + Math.cos(angle * 0.3) * 60;
+                const mediumVariation = Math.sin(angle * 2) * 30 + Math.cos(angle * 1.5) * 25;
+                const smallVariation = Math.sin(angle * 8) * 10 + Math.cos(angle * 6) * 8;
+                
+                const totalRadius = baseRadius + majorVariation + mediumVariation + smallVariation;
+                
+                const x = Math.cos(angle) * totalRadius;
+                const z = Math.sin(angle) * totalRadius;
                 const y = 0; // Garder la piste au niveau du sol
                 
                 trackPoints.push(new THREE.Vector3(x, y, z));
             }
-            
-            // Créer la géométrie de la piste
+              // Créer la géométrie de la piste
             const trackGeometry = new THREE.BufferGeometry();
             const positions = [];
             const indices = [];
             
-            // Générer la géométrie de la piste avec de la largeur
-            const trackWidth = 8;
+            // Générer la géométrie de la piste avec largeur variable
             for (let i = 0; i < trackPoints.length; i++) {
                 const current = trackPoints[i];
                 const next = trackPoints[(i + 1) % trackPoints.length];
                 
                 const direction = new THREE.Vector3().subVectors(next, current).normalize();
                 const perpendicular = new THREE.Vector3(-direction.z, 0, direction.x);
+                
+                // Largeur variable basée sur la position du circuit
+                const anglePos = (i / trackPoints.length) * Math.PI * 2;
+                const baseWidth = 12; // Largeur de base plus grande
+                const widthVariation = Math.sin(anglePos * 4) * 6 + Math.cos(anglePos * 3) * 4;
+                const trackWidth = Math.max(8, baseWidth + widthVariation); // Minimum 8, maximum ~22
                 
                 const left = new THREE.Vector3().addVectors(current, perpendicular.clone().multiplyScalar(trackWidth / 2));
                 const right = new THREE.Vector3().addVectors(current, perpendicular.clone().multiplyScalar(-trackWidth / 2));
@@ -435,10 +445,9 @@
             
             // Créer le terrain autour
             createTerrain();
-        }
-          function createTerrain() {
-            const terrainSize = 200;
-            const segments = 50;
+        }        function createTerrain() {
+            const terrainSize = 800; // Terrain plus grand pour le circuit élargi
+            const segments = 100;
             const terrainGeometry = new THREE.PlaneGeometry(terrainSize, terrainSize, segments, segments);
             
             // Le terrain sera plat au niveau 0 pour correspondre à la piste
@@ -455,7 +464,7 @@
             scene.add(terrain);
             
             // Ajouter un plan de base plus grand pour s'assurer qu'il y a toujours un sol
-            const baseGeometry = new THREE.PlaneGeometry(400, 400);
+            const baseGeometry = new THREE.PlaneGeometry(1200, 1200);
             const baseMaterial = new THREE.MeshLambertMaterial({ color: 0x90EE90 });
             const basePlane = new THREE.Mesh(baseGeometry, baseMaterial);
             basePlane.rotation.x = -Math.PI / 2;
@@ -463,27 +472,31 @@
             basePlane.receiveShadow = true;
             scene.add(basePlane);
         }
-        
-        function createBarriers() {
-            const trackWidth = 8;
-            const barrierHeight = 2;
-            
-            // Créer des barrières le long de la piste
-            for (let i = 0; i < trackPoints.length; i += 2) {
+          function createBarriers() {
+            // Créer des barrières le long de la piste avec espacement adapté au circuit plus long
+            for (let i = 0; i < trackPoints.length; i += 10) { // Espacement plus grand pour éviter trop de barrières
                 const current = trackPoints[i];
                 const next = trackPoints[(i + 1) % trackPoints.length];
                 
                 const direction = new THREE.Vector3().subVectors(next, current).normalize();
                 const perpendicular = new THREE.Vector3(-direction.z, 0, direction.x);
                 
+                // Calculer la largeur de piste à cette position pour positionner les barrières
+                const anglePos = (i / trackPoints.length) * Math.PI * 2;
+                const baseWidth = 12;
+                const widthVariation = Math.sin(anglePos * 4) * 6 + Math.cos(anglePos * 3) * 4;
+                const trackWidth = Math.max(8, baseWidth + widthVariation);
+                
+                const barrierHeight = 2;
+                
                 // Barrière côté gauche
                 const leftBarrierPos = new THREE.Vector3()
-                    .addVectors(current, perpendicular.clone().multiplyScalar(trackWidth / 2 + 2));
+                    .addVectors(current, perpendicular.clone().multiplyScalar(trackWidth / 2 + 3));
                 createSingleBarrier(leftBarrierPos, barrierHeight);
                 
                 // Barrière côté droit
                 const rightBarrierPos = new THREE.Vector3()
-                    .addVectors(current, perpendicular.clone().multiplyScalar(-trackWidth / 2 - 2));
+                    .addVectors(current, perpendicular.clone().multiplyScalar(-trackWidth / 2 - 3));
                 createSingleBarrier(rightBarrierPos, barrierHeight);
             }
         }
