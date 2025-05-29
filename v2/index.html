@@ -70,14 +70,33 @@
             font-size: 32px;
             display: none;
         }
-        
-        #controls {
+          #controls {
             position: absolute;
             bottom: 20px;
             left: 20px;
             color: white;
             font-size: 14px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        
+        #controls button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 12px;
+            margin: 2px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+        
+        #controls button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        #controls button:active {
+            background: rgba(255, 255, 255, 0.4);
         }
     </style>
 </head>
@@ -100,13 +119,16 @@
             <div id="winnerText"></div>
             <button onclick="location.reload()">Rejouer</button>
         </div>
-        
-        <div id="controls">
-            Contrôles: ↑↓ Accélération/Frein • ←→ Direction
+          <div id="controls">
+            Contrôles: ↑↓ Accélération/Frein • ←→ Direction<br>
+            <button id="musicToggle" onclick="toggleMusic()">🔇 Désactiver Musique</button>
+            <button onclick="changeVolume(-0.1)">🔉 Volume -</button>
+            <button onclick="changeVolume(0.1)">🔊 Volume +</button>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="musicGenerator.js"></script>
     <script>
         // Variables globales
         let scene, camera, renderer;
@@ -114,9 +136,10 @@
         let track, trackPoints = [];
         let barriers = [];
         let gameStarted = false;
-        let raceFinished = false;
-        let playerLaps = 0;
+        let raceFinished = false;        let playerLaps = 0;
         let aiLaps = [];
+        let musicGenerator = null;
+        let musicEnabled = true;
         
         // Contrôles
         const keys = {
@@ -270,8 +293,7 @@
                     this.velocity.multiplyScalar(0.8);
                 }
             }
-            
-            checkLapProgress() {
+              checkLapProgress() {
                 // Calculer la progression sur la piste
                 let closestDistance = Infinity;
                 let closestIndex = 0;
@@ -290,6 +312,12 @@
                     if (this.isPlayer) {
                         playerLaps = this.laps;
                         document.getElementById('lapCount').textContent = `${playerLaps}/3`;
+                        
+                        // Jouer l'effet sonore de passage de tour
+                        if (musicGenerator && musicEnabled) {
+                            musicGenerator.playEffect('lap');
+                        }
+                        
                         if (playerLaps >= 3 && !raceFinished) {
                             endRace("Félicitations! Vous avez gagné!");
                         }
@@ -304,14 +332,18 @@
                 
                 this.trackProgress = closestIndex;
                 this.lastCheckpoint = closestIndex;
-            }
-              checkBarrierCollisions() {
+            }              checkBarrierCollisions() {
                 const kartRadius = 1.2;
                 
                 // Vérifier la collision avec chaque barrière
                 for (let barrier of barriers) {
                     const distance = this.position.distanceTo(barrier.position);
                     if (distance < kartRadius + barrier.radius) {
+                        // Jouer l'effet sonore de collision pour le joueur
+                        if (this.isPlayer && musicGenerator && musicEnabled) {
+                            musicGenerator.playEffect('collision');
+                        }
+                        
                         // Collision détectée - calculer la direction de rebond
                         const collisionNormal = new THREE.Vector3()
                             .subVectors(this.position, barrier.position)
@@ -570,12 +602,22 @@
             
             // Positionner la caméra dès que le kart du joueur est créé
             updateCamera();
-        }
-          function startRaceSequence() {
+        }        function startRaceSequence() {
             const redLight = document.getElementById('redLight');
             const yellowLight = document.getElementById('yellowLight');
             const greenLight = document.getElementById('greenLight');
             const trafficLight = document.getElementById('trafficLight');
+              // Initialiser le générateur de musique
+            if (!musicGenerator) {
+                musicGenerator = window.musicGenerator;
+            }
+            
+            // Activer automatiquement la musique au démarrage
+            if (musicGenerator && musicEnabled) {
+                // L'AudioContext doit être activé par une interaction utilisateur
+                // On affiche donc un message pour que l'utilisateur clique
+                console.log('Musique activée - cliquez n\'importe où pour démarrer l\'audio');
+            }
             
             // Séquence: Rouge
             setTimeout(() => {
@@ -599,14 +641,36 @@
                 greenLight.classList.add('green');
                 gameStarted = true;
                 
+                // Jouer l'effet de départ et démarrer la musique
+                if (musicGenerator && musicEnabled) {
+                    musicGenerator.playEffect('start');
+                    setTimeout(() => {
+                        musicGenerator.startRaceMusic();
+                    }, 1000);
+                }
+                
                 // Masquer le feu après 1 seconde
                 setTimeout(() => {
                     trafficLight.style.display = 'none';
                 }, 1000);
             }, 3500);
         }
-        
-        function setupEventListeners() {
+          function setupEventListeners() {
+            // Activer l'AudioContext dès la première interaction
+            const enableAudio = () => {
+                if (musicGenerator && musicGenerator.audioContext && musicGenerator.audioContext.state === 'suspended') {
+                    musicGenerator.audioContext.resume();
+                }
+                // Retirer les listeners après la première activation
+                document.removeEventListener('click', enableAudio);
+                document.removeEventListener('keydown', enableAudio);
+                document.removeEventListener('touchstart', enableAudio);
+            };
+            
+            document.addEventListener('click', enableAudio);
+            document.addEventListener('keydown', enableAudio);
+            document.addEventListener('touchstart', enableAudio);
+            
             document.addEventListener('keydown', (event) => {
                 switch(event.code) {
                     case 'ArrowUp':
@@ -687,8 +751,45 @@
             raceFinished = true;
             document.getElementById('winnerText').textContent = message;
             document.getElementById('winner').style.display = 'block';
+            
+            // Arrêter la musique et jouer l'effet de fin
+            if (musicGenerator && musicEnabled) {
+                musicGenerator.stopMusic();
+                musicGenerator.playEffect('victory');
+            }        }
+        
+        // Fonctions de contrôle de la musique
+        function toggleMusic() {
+            const button = document.getElementById('musicToggle');
+            
+            if (!musicGenerator) {
+                musicGenerator = window.musicGenerator;
+            }
+            
+            if (musicEnabled) {
+                musicEnabled = false;
+                button.textContent = '🎵 Activer Musique';
+                musicGenerator.stopMusic();
+            } else {
+                musicEnabled = true;
+                button.textContent = '🔇 Désactiver Musique';
+                
+                if (gameStarted) {
+                    musicGenerator.startRaceMusic();
+                }
+            }
         }
-          function animate() {
+        
+        function changeVolume(delta) {
+            if (musicGenerator) {
+                const currentVolume = musicGenerator.masterVolume;
+                const newVolume = Math.max(0, Math.min(1, currentVolume + delta));
+                musicGenerator.setVolume(newVolume);
+                console.log(`Volume: ${Math.round(newVolume * 100)}%`);
+            }
+        }
+        
+        function animate() {
             requestAnimationFrame(animate);
             
             // Toujours mettre à jour la caméra, même avant le début de la course
