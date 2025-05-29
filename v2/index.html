@@ -243,8 +243,7 @@
                 // Convertir la vitesse en vélocité
                 this.velocity.x = Math.sin(this.rotation) * this.speed;
                 this.velocity.z = Math.cos(this.rotation) * this.speed;
-                
-                // Vérifier les collisions avec les barrières
+                  // Vérifier les collisions avec les barrières
                 this.checkBarrierCollisions();
                 
                 // Gravité et hauteur du terrain
@@ -256,8 +255,7 @@
                     this.velocity.y = 0;
                 }
             }
-            
-            updatePosition() {
+              updatePosition() {
                 this.position.add(this.velocity);
                 this.group.position.copy(this.position);
                 this.group.rotation.y = this.rotation;
@@ -266,6 +264,11 @@
                 this.wheels.forEach(wheel => {
                     wheel.rotation.x += this.speed * 5;
                 });
+                
+                // Limiter les mouvements erratiques après collision
+                if (Math.abs(this.velocity.x) > 2 || Math.abs(this.velocity.z) > 2) {
+                    this.velocity.multiplyScalar(0.8);
+                }
             }
             
             checkLapProgress() {
@@ -302,28 +305,39 @@
                 this.trackProgress = closestIndex;
                 this.lastCheckpoint = closestIndex;
             }
-            
-            checkBarrierCollisions() {
+              checkBarrierCollisions() {
                 const kartRadius = 1.2;
-                const nextPos = new THREE.Vector3().copy(this.position).add(this.velocity);
                 
                 // Vérifier la collision avec chaque barrière
                 for (let barrier of barriers) {
-                    const distance = nextPos.distanceTo(barrier.position);
+                    const distance = this.position.distanceTo(barrier.position);
                     if (distance < kartRadius + barrier.radius) {
                         // Collision détectée - calculer la direction de rebond
                         const collisionNormal = new THREE.Vector3()
                             .subVectors(this.position, barrier.position)
                             .normalize();
                         
-                        // Déplacer le kart hors de la barrière
-                        this.position.copy(barrier.position)
-                            .add(collisionNormal.multiplyScalar(kartRadius + barrier.radius + 0.1));
+                        // Appliquer une force de rebond progressive au lieu de téléporter
+                        const penetrationDepth = (kartRadius + barrier.radius) - distance;
+                        const pushBack = collisionNormal.multiplyScalar(penetrationDepth * 0.5);
+                        this.position.add(pushBack);
                         
-                        // Réduire la vitesse et changer la direction
-                        this.speed *= 0.3;
-                        const deflectionAngle = Math.atan2(collisionNormal.x, collisionNormal.z);
-                        this.rotation = deflectionAngle;
+                        // Modifier la vélocité pour un rebond réaliste
+                        const velocityDirection = new THREE.Vector3(this.velocity.x, 0, this.velocity.z).normalize();
+                        const dotProduct = velocityDirection.dot(collisionNormal);
+                        
+                        // Réfléchir la vélocité par rapport à la normale de collision
+                        const reflection = velocityDirection.sub(collisionNormal.multiplyScalar(2 * dotProduct));
+                        
+                        // Appliquer la nouvelle direction avec une réduction de vitesse
+                        this.speed *= 0.7; // Réduction moins brutale
+                        this.velocity.x = reflection.x * this.speed;
+                        this.velocity.z = reflection.z * this.speed;
+                        
+                        // Ajuster légèrement la rotation pour suivre la nouvelle direction
+                        const newAngle = Math.atan2(this.velocity.x, this.velocity.z);
+                        this.rotation = newAngle;
+                        
                         break;
                     }
                 }
