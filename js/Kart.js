@@ -37,51 +37,202 @@ class Kart {
         this.driftAudioPlaying = false;
 
         this.createModel(color);
-    }
-
-    createModel(color) {
+    }    createModel(color) {
         this.group = new THREE.Group();
 
-        // Corps du kart
-        const bodyGeometry = new THREE.BoxGeometry(1.5, 0.5, 2.5);
-        const bodyMaterial = new THREE.MeshLambertMaterial({ color: color });
-        this.body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-        this.body.position.y = 0.25;
+        // Châssis principal - forme plus réaliste
+        const mainBodyGeometry = new THREE.BoxGeometry(1.4, 0.4, 2.2);
+        const bodyMaterial = new THREE.MeshPhongMaterial({ 
+            color: color,
+            shininess: 100,
+            specular: 0x444444
+        });
+        this.body = new THREE.Mesh(mainBodyGeometry, bodyMaterial);
+        this.body.position.set(0, 0.3, 0);
         this.body.castShadow = true;
         this.group.add(this.body);
 
-        // Roues
-        const wheelGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 8);
-        const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+        // Cockpit (partie avant surélevée)
+        const cockpitGeometry = new THREE.BoxGeometry(1.0, 0.3, 1.0);
+        const cockpitMaterial = new THREE.MeshPhongMaterial({ 
+            color: new THREE.Color(color).multiplyScalar(0.8),
+            shininess: 80
+        });
+        const cockpit = new THREE.Mesh(cockpitGeometry, cockpitMaterial);
+        cockpit.position.set(0, 0.65, 0.3);
+        cockpit.castShadow = true;
+        this.group.add(cockpit);
 
+        // Siège du pilote
+        const seatGeometry = new THREE.BoxGeometry(0.6, 0.4, 0.8);
+        const seatMaterial = new THREE.MeshPhongMaterial({ color: 0x222222 });
+        const seat = new THREE.Mesh(seatGeometry, seatMaterial);
+        seat.position.set(0, 0.7, 0.2);
+        seat.castShadow = true;
+        this.group.add(seat);
+
+        // Dossier du siège
+        const backrestGeometry = new THREE.BoxGeometry(0.6, 0.6, 0.1);
+        const backrest = new THREE.Mesh(backrestGeometry, seatMaterial);
+        backrest.position.set(0, 0.8, -0.15);
+        backrest.castShadow = true;
+        this.group.add(backrest);
+
+        // Volant
+        const steeringWheelGeometry = new THREE.TorusGeometry(0.15, 0.02, 8, 16);
+        const steeringWheelMaterial = new THREE.MeshPhongMaterial({ color: 0x111111 });
+        const steeringWheel = new THREE.Mesh(steeringWheelGeometry, steeringWheelMaterial);
+        steeringWheel.position.set(0, 0.9, 0.4);
+        steeringWheel.rotation.x = -Math.PI / 6;
+        steeringWheel.castShadow = true;
+        this.group.add(steeringWheel);
+
+        // Support du volant
+        const steeringColumnGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 8);
+        const steeringColumn = new THREE.Mesh(steeringColumnGeometry, steeringWheelMaterial);
+        steeringColumn.position.set(0, 0.75, 0.35);
+        steeringColumn.rotation.x = -Math.PI / 6;
+        steeringColumn.castShadow = true;
+        this.group.add(steeringColumn);
+
+        // Aileron arrière
+        const rearWingGeometry = new THREE.BoxGeometry(1.6, 0.05, 0.3);
+        const rearWingMaterial = new THREE.MeshPhongMaterial({ 
+            color: new THREE.Color(color).multiplyScalar(0.7),
+            shininess: 120
+        });
+        const rearWing = new THREE.Mesh(rearWingGeometry, rearWingMaterial);
+        rearWing.position.set(0, 0.8, -1.2);
+        rearWing.castShadow = true;
+        this.group.add(rearWing);
+
+        // Supports de l'aileron
+        for (let x of [-0.6, 0.6]) {
+            const wingSupportGeometry = new THREE.CylinderGeometry(0.03, 0.03, 0.4, 6);
+            const wingSupport = new THREE.Mesh(wingSupportGeometry, new THREE.MeshPhongMaterial({ color: 0x444444 }));
+            wingSupport.position.set(x, 0.6, -1.2);
+            wingSupport.castShadow = true;
+            this.group.add(wingSupport);
+        }
+
+        // Pare-chocs avant
+        const frontBumperGeometry = new THREE.BoxGeometry(1.3, 0.15, 0.2);
+        const bumperMaterial = new THREE.MeshPhongMaterial({ color: 0x666666, shininess: 50 });
+        const frontBumper = new THREE.Mesh(frontBumperGeometry, bumperMaterial);
+        frontBumper.position.set(0, 0.2, 1.2);
+        frontBumper.castShadow = true;
+        this.group.add(frontBumper);
+
+        // Pare-chocs arrière
+        const rearBumper = new THREE.Mesh(frontBumperGeometry, bumperMaterial);
+        rearBumper.position.set(0, 0.2, -1.2);
+        rearBumper.castShadow = true;
+        this.group.add(rearBumper);
+
+        // Roues améliorées
+        this.wheels = [];
         const wheelPositions = [
-            [-0.8, 0, 1], [0.8, 0, 1],
-            [-0.8, 0, -1], [0.8, 0, -1]
+            [-0.8, 0, 1], [0.8, 0, 1],    // Roues avant
+            [-0.8, 0, -1], [0.8, 0, -1]  // Roues arrière
         ];
 
-        this.wheels = [];
-        wheelPositions.forEach(pos => {
-            const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
-            wheel.position.set(pos[0], pos[1], pos[2]);
-            wheel.rotation.z = Math.PI / 2;
-            wheel.castShadow = true;
-            this.group.add(wheel);
-            this.wheels.push(wheel);
+        wheelPositions.forEach((pos, index) => {
+            // Pneu
+            const tireGeometry = new THREE.CylinderGeometry(0.35, 0.35, 0.25, 12);
+            const tireMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x222222,
+                shininess: 10
+            });
+            const tire = new THREE.Mesh(tireGeometry, tireMaterial);
+            tire.position.set(pos[0], pos[1], pos[2]);
+            tire.rotation.z = Math.PI / 2;
+            tire.castShadow = true;
+            this.group.add(tire);
+
+            // Jante
+            const rimGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.15, 8);
+            const rimMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xCCCCCC,
+                shininess: 100,
+                specular: 0xFFFFFF
+            });
+            const rim = new THREE.Mesh(rimGeometry, rimMaterial);
+            rim.position.set(pos[0], pos[1], pos[2]);
+            rim.rotation.z = Math.PI / 2;
+            rim.castShadow = true;
+            this.group.add(rim);
+
+            // Rayons de jante
+            for (let i = 0; i < 5; i++) {
+                const spokeGeometry = new THREE.BoxGeometry(0.02, 0.2, 0.02);
+                const spoke = new THREE.Mesh(spokeGeometry, rimMaterial);
+                const angle = (i / 5) * Math.PI * 2;
+                spoke.position.set(
+                    pos[0] + Math.cos(angle) * 0.1,
+                    pos[1] + Math.sin(angle) * 0.1,
+                    pos[2]
+                );
+                spoke.rotation.z = angle + Math.PI / 2;
+                spoke.castShadow = true;
+                this.group.add(spoke);
+            }
+
+            this.wheels.push(tire);
+        });        // Détails décoratifs - bandes colorées
+        const stripeGeometry = new THREE.BoxGeometry(1.5, 0.05, 0.3);
+        const brightColor = new THREE.Color(color).multiplyScalar(1.5);
+        // Limiter les valeurs RGB entre 0 et 1
+        brightColor.r = Math.min(brightColor.r, 1);
+        brightColor.g = Math.min(brightColor.g, 1);
+        brightColor.b = Math.min(brightColor.b, 1);
+        const stripeMaterial = new THREE.MeshPhongMaterial({ 
+            color: brightColor,
+            shininess: 150
         });
+        
+        // Bande sur le côté
+        for (let side of [-1, 1]) {
+            const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
+            stripe.position.set(0, 0.45, 0);
+            stripe.rotation.y = side * Math.PI / 2;
+            stripe.position.x = side * 0.7;
+            this.group.add(stripe);
+        }
+
+        // Numéro sur le kart (pour différencier les karts)
+        if (!this.isPlayer) {
+            const numberGeometry = new THREE.BoxGeometry(0.3, 0.3, 0.02);
+            const numberMaterial = new THREE.MeshPhongMaterial({ color: 0xFFFFFF });
+            const numberPlate = new THREE.Mesh(numberGeometry, numberMaterial);
+            numberPlate.position.set(0, 0.6, 1.1);
+            numberPlate.castShadow = true;
+            this.group.add(numberPlate);
+        }
+
+        // Échappement
+        const exhaustGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.4, 8);
+        const exhaustMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0x444444,
+            shininess: 80
+        });
+        const exhaust = new THREE.Mesh(exhaustGeometry, exhaustMaterial);
+        exhaust.position.set(-0.4, 0.3, -1.1);
+        exhaust.rotation.x = Math.PI / 2;
+        exhaust.castShadow = true;
+        this.group.add(exhaust);
 
         this.game.getScene().add(this.group);
         
         // Créer le système de particules pour la fumée de dérapage
         this.createDriftEffects();
-    }
-
-    createDriftEffects() {
-        // Géométrie des particules
-        const particleCount = 50;
+    }    createDriftEffects() {
+        // Géométrie des particules améliorée
+        const particleCount = 100; // Plus de particules pour un effet plus dense
         const particles = new THREE.BufferGeometry();
         const positions = new Float32Array(particleCount * 3);
         const velocities = new Float32Array(particleCount * 3);
         const ages = new Float32Array(particleCount);
+        const sizes = new Float32Array(particleCount);
 
         for (let i = 0; i < particleCount; i++) {
             positions[i * 3] = 0;
@@ -91,20 +242,24 @@ class Kart {
             velocities[i * 3 + 1] = 0;
             velocities[i * 3 + 2] = 0;
             ages[i] = 0;
+            sizes[i] = Math.random() * 2 + 0.5; // Tailles variables
         }
 
         particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         particles.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
         particles.setAttribute('age', new THREE.BufferAttribute(ages, 1));
+        particles.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
-        // Matériau des particules
+        // Matériau des particules amélioré
         const particleMaterial = new THREE.PointsMaterial({
-            color: 0x888888,
-            size: 0.8,
+            color: 0xAAAAAA,
+            size: 1.2,
             transparent: true,
-            opacity: 0.6,
+            opacity: 0.8,
             depthWrite: false,
-            blending: THREE.AdditiveBlending
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true,
+            alphaTest: 0.01
         });
 
         this.driftEffects = new THREE.Points(particles, particleMaterial);
@@ -452,27 +607,73 @@ class Kart {
         this.group.position.copy(this.position);
         this.group.rotation.y = this.rotation;
 
-        // Rotation des roues basée sur la vitesse réelle
-        const wheelRotationSpeed = Math.abs(this.speed) * 8;
-        this.wheels.forEach(wheel => {
+        // Animation des roues - rotation basée sur la vitesse réelle
+        const wheelRotationSpeed = Math.abs(this.speed) * 0.08;
+        this.wheels.forEach((wheel, index) => {
             wheel.rotation.x += wheelRotationSpeed;
+            
+            // Rotation des roues avant pour la direction (effet de braquage)
+            if (index < 2) { // Roues avant
+                const steerAngle = this.steerInput * 0.3;
+                wheel.rotation.y = THREE.MathUtils.lerp(wheel.rotation.y, steerAngle, 0.1);
+            }
         });
         
         // Incliner le kart dans les virages pour plus de réalisme
-        let tiltAmount = this.angularVelocity * 0.15;
+        let tiltAmount = this.angularVelocity * 0.2;
         
         // Incliner davantage pendant le dérapage si c'est le joueur
         if (this.isPlayer && this.traction < 0.5) { // En mode dérapage
-            tiltAmount *= 2.5; // Inclinaison plus prononcée
+            tiltAmount *= 3.0; // Inclinaison plus prononcée
         }
         
-        this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, tiltAmount, 0.08);
+        this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, tiltAmount, 0.12);
+
+        // Effet de rebond vertical basé sur la vitesse et les virages
+        const baseHeight = this.position.y;
+        const bounceAmount = Math.abs(this.speed) * 0.002 + Math.abs(this.angularVelocity) * 0.05;
+        const bounceOffset = Math.sin(Date.now() * 0.01) * bounceAmount;
+        this.group.position.y = baseHeight + bounceOffset;
+
+        // Animation du volant selon la direction
+        if (this.group.children.length > 6) { // Vérifier que le volant existe
+            const steeringWheel = this.group.children.find(child => 
+                child.geometry && child.geometry.type === 'TorusGeometry'
+            );
+            if (steeringWheel) {
+                const targetRotation = this.steerInput * 0.5;
+                steeringWheel.rotation.z = THREE.MathUtils.lerp(
+                    steeringWheel.rotation.z, 
+                    targetRotation, 
+                    0.15
+                );
+            }
+        }
+
+        // Effet de compression/extension des suspensions dans les virages
+        if (this.wheels.length === 4) {
+            const suspensionEffect = this.angularVelocity * 0.1;
+            
+            // Roues extérieures s'abaissent, roues intérieures se relèvent
+            this.wheels[0].position.y = suspensionEffect; // Roue avant gauche
+            this.wheels[1].position.y = -suspensionEffect; // Roue avant droite
+            this.wheels[2].position.y = suspensionEffect; // Roue arrière gauche
+            this.wheels[3].position.y = -suspensionEffect; // Roue arrière droite
+        }
 
         // Limiter les mouvements erratiques après collision
         if (Math.abs(this.velocity.x) > 3 || Math.abs(this.velocity.z) > 3) {
             this.velocity.multiplyScalar(0.7);
         }
-    }    destroy() {
+
+        // Effet de fumée d'échappement basé sur l'accélération
+        if (this.speed > this.maxSpeed * 0.7) {
+            // Créer occasionnellement des particules d'échappement
+            if (Math.random() < 0.1) {
+                this.createExhaustParticle();
+            }
+        }
+    }destroy() {
         // Nettoyer les effets de dérapage
         this.stopDriftEffects();
         
@@ -541,18 +742,31 @@ class Kart {
             
             // Vieillissement des particules
             ages[i] += 0.02;
-            
-            // Si la particule est trop vieille, la réinitialiser
+              // Si la particule est trop vieille, la réinitialiser
             if (ages[i] > 1.0) {
-                // Position initiale près des roues arrière
-                positions[i3] = this.position.x + (Math.random() - 0.5) * 2;
-                positions[i3 + 1] = this.position.y + 0.1;
-                positions[i3 + 2] = this.position.z + (Math.random() - 0.5) * 2;
+                // Position initiale près des roues arrière avec direction réaliste
+                const rearOffset = new THREE.Vector3(
+                    Math.sin(this.rotation),
+                    0,
+                    Math.cos(this.rotation)
+                ).multiplyScalar(-0.8); // Vers l'arrière du kart
                 
-                // Vélocité aléatoire vers l'arrière et vers le haut
-                velocities[i3] = (Math.random() - 0.5) * 0.2;
-                velocities[i3 + 1] = Math.random() * 0.1;
-                velocities[i3 + 2] = (Math.random() - 0.5) * 0.2;
+                positions[i3] = this.position.x + rearOffset.x + (Math.random() - 0.5) * 1.5;
+                positions[i3 + 1] = this.position.y + 0.05;
+                positions[i3 + 2] = this.position.z + rearOffset.z + (Math.random() - 0.5) * 1.5;
+                
+                // Vélocité latérale basée sur la direction du dérapage
+                const lateralDirection = new THREE.Vector3(
+                    Math.cos(this.rotation),
+                    0,
+                    -Math.sin(this.rotation)
+                );
+                
+                const driftDirection = lateralDirection.multiplyScalar(this.angularVelocity * 2);
+                
+                velocities[i3] = driftDirection.x + (Math.random() - 0.5) * 0.3;
+                velocities[i3 + 1] = Math.random() * 0.15;
+                velocities[i3 + 2] = driftDirection.z + (Math.random() - 0.5) * 0.3;
                 
                 ages[i] = 0;
             } else {
@@ -560,11 +774,10 @@ class Kart {
                 positions[i3] += velocities[i3];
                 positions[i3 + 1] += velocities[i3 + 1];
                 positions[i3 + 2] += velocities[i3 + 2];
-                
-                // Appliquer la gravité et la résistance de l'air
-                velocities[i3] *= 0.98;
-                velocities[i3 + 1] -= 0.002; // Gravité
-                velocities[i3 + 2] *= 0.98;
+                  // Appliquer la gravité et la résistance de l'air
+                velocities[i3] *= 0.96;
+                velocities[i3 + 1] -= 0.003; // Gravité plus forte
+                velocities[i3 + 2] *= 0.96;
             }
         }
 
@@ -572,9 +785,60 @@ class Kart {
         this.driftEffects.geometry.attributes.position.needsUpdate = true;
         this.driftEffects.geometry.attributes.velocity.needsUpdate = true;
         this.driftEffects.geometry.attributes.age.needsUpdate = true;
+        if (this.driftEffects.geometry.attributes.size) {
+            this.driftEffects.geometry.attributes.size.needsUpdate = true;
+        }
         
         // Ajuster l'opacité en fonction de la vitesse de dérapage
         const driftIntensity = Math.min(Math.abs(this.speed) / this.maxSpeed, 1.0);
-        this.driftEffects.material.opacity = 0.3 + driftIntensity * 0.3;
+        this.driftEffects.material.opacity = 0.4 + driftIntensity * 0.4;
+    }
+
+    createExhaustParticle() {
+        // Créer une particule de fumée d'échappement temporaire
+        const particleGeometry = new THREE.SphereGeometry(0.05, 6, 6);
+        const particleMaterial = new THREE.MeshBasicMaterial({
+            color: 0x666666,
+            transparent: true,
+            opacity: 0.6
+        });
+        
+        const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+        
+        // Position à l'échappement
+        const exhaustPos = new THREE.Vector3(-0.4, 0.3, -1.1);
+        exhaustPos.applyMatrix4(this.group.matrixWorld);
+        particle.position.copy(exhaustPos);
+        
+        // Ajouter une vélocité aléatoire vers l'arrière
+        const velocity = new THREE.Vector3(
+            (Math.random() - 0.5) * 0.1,
+            Math.random() * 0.05,
+            -Math.random() * 0.1
+        );
+        
+        this.game.getScene().add(particle);
+        
+        // Animer et supprimer la particule
+        let life = 1.0;
+        const animate = () => {
+            life -= 0.02;
+            particle.position.add(velocity);
+            particle.material.opacity = life * 0.6;
+            particle.scale.multiplyScalar(1.02);
+            
+            velocity.y -= 0.001; // Gravité légère
+            velocity.multiplyScalar(0.98); // Résistance de l'air
+            
+            if (life > 0) {
+                requestAnimationFrame(animate);
+            } else {
+                this.game.getScene().remove(particle);
+                particleGeometry.dispose();
+                particleMaterial.dispose();
+            }
+        };
+        
+        animate();
     }
 }
