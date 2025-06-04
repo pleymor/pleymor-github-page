@@ -6,10 +6,10 @@ class Game {
         this.renderer = null;
         this.playerKart = null;
         this.aiKarts = [];
-        this.track = null;
-        this.audioManager = null;
+        this.track = null;        this.audioManager = null;
         this.uiManager = null;
         this.inputManager = null;
+        this.rainManager = null;
 
         this.gameStarted = false;
         this.raceFinished = false;
@@ -25,6 +25,7 @@ class Game {
         this.audioManager = new AudioManager(this);
         this.uiManager = new UIManager(this);
         this.inputManager = new InputManager();
+        this.rainManager = new RainManager(this);
         
         // Créer les éléments de jeu
         this.track = new Track(this);
@@ -104,9 +105,7 @@ class Game {
         this.gameStarted = true;
         this.uiManager.hideTrafficLights();
         this.audioManager.playRaceMusic();
-    }
-
-    update() {
+    }    update() {
         if (!this.gameStarted || this.raceFinished) return;
 
         // Mettre à jour les karts
@@ -118,6 +117,9 @@ class Game {
 
         // Mettre à jour l'interface
         this.uiManager.updateGameStats(this.playerKart);
+
+        // Mettre à jour les effets de pluie
+        this.rainManager.update();
     }
 
     updateCamera() {

@@ -291,26 +291,25 @@
         <div id="winner">
             <div id="winnerText"></div>
             <button onclick="location.reload()">Rejouer</button>
-        </div>
-        <div id="controls">
+        </div>        <div id="controls">
             Contrôles: ↑↓ Accélération/Frein • ←→ Direction<br>
             <button id="musicToggle">🔇 Désactiver Musique</button>
+            <button id="rainToggle">🌧️ Activer Pluie</button>
             <!-- <div class="volume-control">
                 🔉 <input type="range" id="volumeSlider" min="0" max="100" value="30" step="1"> 🔊
             </div> -->
-        </div>        <!-- Minimap -->
+        </div><!-- Minimap -->
         <div id="minimap">
             <canvas id="minimapCanvas" width="200" height="200"></canvas>
         </div>
     </div>
 
     <!-- Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-    <!-- Classes modulaires -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>    <!-- Classes modulaires -->
     <script src="js/AudioManager.js"></script>
     <script src="js/InputManager.js"></script>
     <script src="js/UIManager.js"></script>
+    <script src="js/RainManager.js"></script>
     <script src="js/Track.js"></script>
     <script src="js/Kart.js"></script>
     <script src="js/Game.js"></script>

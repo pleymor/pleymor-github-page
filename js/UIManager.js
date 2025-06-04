@@ -4,10 +4,10 @@ class UIManager {
         this.game = game;
         this.startScreen = document.getElementById('startScreen');
         this.gameUI = document.getElementById('ui');
-        this.trafficLight = document.getElementById('trafficLight');
-        this.winner = document.getElementById('winner');
+        this.trafficLight = document.getElementById('trafficLight');        this.winner = document.getElementById('winner');
         this.musicToggle = document.getElementById('musicToggle');
         this.volumeSlider = document.getElementById('volumeSlider');
+        this.rainToggle = document.getElementById('rainToggle');
 
         // Minimap elements
         this.minimap = document.getElementById('minimap');
@@ -34,12 +34,17 @@ class UIManager {
         const startButton = document.getElementById('startButton');
         startButton.addEventListener('click', () => {
             this.game.startGame();
-        });
-
-        // Boutons de contrôle audio
+        });        // Boutons de contrôle audio
         this.musicToggle.addEventListener('click', () => {
             this.toggleMusic();
-        }); this.volumeSlider?.addEventListener('input', (event) => {
+        });
+
+        // Bouton de contrôle de la pluie
+        this.rainToggle?.addEventListener('click', () => {
+            this.toggleRain();
+        }); 
+
+        this.volumeSlider?.addEventListener('input', (event) => {
             const value = parseFloat(event.target.value) / 100;
             console.log('Setting volume to:', value);
             this.game.audioManager.setVolume(value);
@@ -129,11 +134,17 @@ class UIManager {
     showWinner(message) {
         document.getElementById('winnerText').textContent = message;
         this.winner.style.display = 'block';
-    }
-
-    toggleMusic() {
+    }    toggleMusic() {
         const isEnabled = this.game.audioManager.toggleTheMusic();
         this.musicToggle.innerHTML = isEnabled ? '🔇 Désactiver Musique' : '🔊 Activer Musique';
+    }
+
+    toggleRain() {
+        if (this.game.rainManager) {
+            this.game.rainManager.toggle();
+            const isEnabled = this.game.rainManager.rainEnabled;
+            this.rainToggle.innerHTML = isEnabled ? '🌤️ Désactiver Pluie' : '🌧️ Activer Pluie';
+        }
     }
 
     onWindowResize() {
