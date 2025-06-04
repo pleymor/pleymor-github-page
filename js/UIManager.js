@@ -114,6 +114,10 @@ class UIManager {
         const speed = Math.floor(playerKart.getSpeed());
         document.getElementById('speed').textContent = speed;
 
+        // Mettre à jour le niveau de zoom
+        const zoomLevel = this.game.inputManager.getZoomLevel();
+        document.getElementById('zoomLevel').textContent = `${zoomLevel.toFixed(1)}x`;
+
         // Calculer et afficher la position (simple pour le moment)
         let position = 1;
         const playerProgress = playerKart.trackProgress;

@@ -120,17 +120,20 @@ class Game {
 
         // Mettre à jour les effets de pluie
         this.rainManager.update();
-    }
-
-    updateCamera() {
+    }    updateCamera() {
         if (!this.playerKart) return;
 
         const kartPos = this.playerKart.getPosition();
         const kartRot = this.playerKart.getRotation();
+        const zoomLevel = this.inputManager.getZoomLevel();
 
-        // Position de la caméra derrière le kart
-        const cameraDistance = 15;
-        const cameraHeight = 8;
+        // Position de la caméra derrière le kart avec zoom
+        const baseCameraDistance = 15;
+        const baseCameraHeight = 8;
+        
+        // Apply zoom to both distance and height for better zoom effect
+        const cameraDistance = baseCameraDistance * zoomLevel;
+        const cameraHeight = baseCameraHeight * (0.7 + zoomLevel * 0.3); // Height changes less dramatically
 
         const cameraX = kartPos.x - Math.sin(kartRot) * cameraDistance;
         const cameraZ = kartPos.z - Math.cos(kartRot) * cameraDistance;

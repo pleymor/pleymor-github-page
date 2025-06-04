@@ -263,19 +263,17 @@
     </style>
 </head>
 
-<body>
-    <div id="gameContainer">
+<body>    <div id="gameContainer">
         <div id="ui">
             <div>Tours: <span id="lapCount">0/3</span></div>
             <div>Position: <span id="position">1</span></div>
             <div>Vitesse: <span id="speed">0</span> km/h</div>
-        </div>
-
-        <div id="startScreen">
+            <div>Zoom: <span id="zoomLevel">1.0x</span></div>
+        </div>        <div id="startScreen">
             <h1>🏎️ Karting 3D 🏎️</h1>
             <p>Préparez-vous pour une course intense!</p>
             <p>Course de 3 tours sur circuit procédural</p>
-            <p>Contrôles: ↑↓ Accélération/Frein • ←→ Direction</p>
+            <p>Contrôles: ↑↓ Accélération/Frein • ←→ Direction • 🖱️ Molette ou +/- pour Zoom</p>
             <button id="startButton">
                 🚀 Démarrer la Course 🚀
             </button>
@@ -292,7 +290,7 @@
             <div id="winnerText"></div>
             <button onclick="location.reload()">Rejouer</button>
         </div>        <div id="controls">
-            Contrôles: ↑↓ Accélération/Frein • ←→ Direction<br>
+            Contrôles: ↑↓ Accélération/Frein • ←→ Direction • 🖱️ Molette ou +/- pour Zoom<br>
             <button id="musicToggle">🔇 Désactiver Musique</button>
             <button id="rainToggle">🌧️ Activer Pluie</button>
             <!-- <div class="volume-control">
