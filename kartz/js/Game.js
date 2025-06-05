@@ -98,14 +98,20 @@ class Game {
         // Afficher les feux de circulation
         this.uiManager.showTrafficLights();
         this.startRaceSequence();
-    }
-
-    async startRaceSequence() {
+    }    async startRaceSequence() {
         await this.audioManager.playTrafficLightSequence();
         this.gameStarted = true;
         this.uiManager.hideTrafficLights();
         this.audioManager.playRaceMusic();
-    }    update() {
+        
+        // Show mobile controls if on mobile device
+        if (this.inputManager.isMobile || this.inputManager.isTablet || this.inputManager.isTouchDevice) {
+            this.inputManager.showMobileControls();
+        }
+        
+        // Emit gameStarted event for any other listeners
+        document.dispatchEvent(new CustomEvent('gameStarted'));
+    }update() {
         if (!this.gameStarted || this.raceFinished) return;
 
         // Mettre à jour l'input manager pour la rotation de caméra

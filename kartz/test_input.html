@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InputManager Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #111; 
+            color: white; 
+        }
+        .mobile-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            display: none;
+        }
+        .mobile-controls.show {
+            display: block;
+        }
+        .touch-button {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            margin: 5px;
+            user-select: none;
+        }
+        .touch-button.pressed {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .dpad {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            gap: 5px;
+            width: 200px;
+        }
+        .dpad-up { grid-column: 2; grid-row: 1; }
+        .dpad-left { grid-column: 1; grid-row: 2; }
+        .dpad-right { grid-column: 3; grid-row: 2; }
+        .dpad-down { grid-column: 2; grid-row: 3; }
+    </style>
+</head>
+<body>
+    <h1>🎮 InputManager Test</h1>
+    <div id="output"></div>
+    <button onclick="testMobileControls()">Test Mobile Controls</button>
+    <button onclick="simulateMobile()">Simulate Mobile Device</button>
+    
+    <!-- Mobile Controls -->
+    <div id="mobileControls" class="mobile-controls">
+        <div class="dpad">
+            <div id="touchUp" class="touch-button dpad-up">↑</div>
+            <div id="touchLeft" class="touch-button dpad-left">←</div>
+            <div id="touchRight" class="touch-button dpad-right">→</div>
+            <div id="touchDown" class="touch-button dpad-down">↓</div>
+        </div>
+        <div id="touchDrift" class="touch-button">DRIFT</div>
+        <div id="touchZoomIn" class="touch-button">+</div>
+        <div id="touchZoomOut" class="touch-button">-</div>
+    </div>
+    
+    <div id="mobileUIInfo" style="display: none;">
+        <h3>Mobile Controls Ready!</h3>
+        <p>Use touch controls to play the game.</p>
+        <button onclick="document.getElementById('mobileUIInfo').style.display='none'">Got it!</button>
+    </div>
+    
+    <div id="cameraTouchArea" style="width: 100px; height: 100px; background: rgba(255,255,255,0.1); margin: 20px;">
+        Camera Touch Area
+    </div>
+    
+    <script src="js/InputManager.js"></script>
+    <script>
+        let inputManager;
+        
+        function log(message) {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.innerHTML = new Date().toLocaleTimeString() + ': ' + message;
+            output.appendChild(div);
+            console.log(message);
+        }
+        
+        function testMobileControls() {
+            try {
+                log('🧪 Creating InputManager...');
+                inputManager = new InputManager();
+                log('✅ InputManager created successfully!');
+                
+                // Test inputs every second
+                setInterval(() => {
+                    const inputs = inputManager.getInputs();
+                    if (inputs.up || inputs.down || inputs.left || inputs.right || inputs.drift) {
+                        log('🎮 Inputs: ' + JSON.stringify(inputs));
+                    }
+                }, 1000);
+                
+                log('✅ Test setup complete!');
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+                console.error(error);
+            }
+        }
+        
+        function simulateMobile() {
+            // Force mobile detection for testing
+            if (inputManager) {
+                inputManager.isMobile = true;
+                inputManager.isTouchDevice = true;
+                inputManager.initializeMobileInterface();
+                inputManager.showMobileControls();
+                log('📱 Mobile simulation activated!');
+            } else {
+                log('❌ Create InputManager first!');
+            }
+        }
+        
+        // Auto-test on load
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🚀 Page loaded, running tests...');
+            testMobileControls();
+        });
+    </script>
+</body>
+</html>

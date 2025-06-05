@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Controls Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #111;
+            color: white;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+        }
+        .success { background: #1a4;  }
+        .error { background: #a14; }
+        .info { background: #14a; }
+    </style>
+</head>
+<body>
+    <h1>🏎️ Karting Mobile Controls Test</h1>
+    <div id="results"></div>
+    
+    <script src="js/InputManager.js"></script>
+    <script>
+        console.log('Starting mobile controls test...');
+        
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+        
+        try {
+            // Test InputManager instantiation
+            addResult('Creating InputManager instance...', 'info');
+            const inputManager = new InputManager();
+            addResult('✅ InputManager created successfully!', 'success');
+            
+            // Test method existence
+            addResult('Checking methods:', 'info');
+            if (typeof inputManager.setupEventListeners === 'function') {
+                addResult('✅ setupEventListeners method exists', 'success');
+            } else {
+                addResult('❌ setupEventListeners method missing', 'error');
+            }
+            
+            if (typeof inputManager.getInputs === 'function') {
+                addResult('✅ getInputs method exists', 'success');
+            } else {
+                addResult('❌ getInputs method missing', 'error');
+            }
+            
+            // Test device detection
+            addResult(`Device Detection:`, 'info');
+            addResult(`Mobile: ${inputManager.isMobile}`, inputManager.isMobile ? 'success' : 'info');
+            addResult(`Tablet: ${inputManager.isTablet}`, inputManager.isTablet ? 'success' : 'info');
+            addResult(`Touch Device: ${inputManager.isTouchDevice}`, inputManager.isTouchDevice ? 'success' : 'info');
+            addResult(`User Agent: ${navigator.userAgent}`, 'info');
+            addResult(`Max Touch Points: ${navigator.maxTouchPoints}`, 'info');
+            
+            // Test input state
+            const inputs = inputManager.getInputs();
+            addResult('✅ getInputs() works: ' + JSON.stringify(inputs), 'success');
+            
+        } catch (error) {
+            addResult('❌ Error: ' + error.message, 'error');
+            console.error('Test error:', error);
+        }
+    </script>
+</body>
+</html>

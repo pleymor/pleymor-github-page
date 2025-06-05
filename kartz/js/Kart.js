@@ -313,14 +313,20 @@ class Kart {
         this.turnSpeed = Math.max(
             this.maxTurnSpeed * (1 - Math.log10(1 + 9 * speedNorm)),
             minTurnSpeed
-        );
-
-        this.steerInput = 0;
-        if (inputs.left && Math.abs(this.speed) > 0.02) {
-            this.steerInput = speedNorm * (this.speed > 0 ? 1 : -1) * 0.7;
-        }
-        if (inputs.right && Math.abs(this.speed) > 0.02) {
-            this.steerInput = -speedNorm * (this.speed > 0 ? 1 : -1) * 0.7;
+        );        this.steerInput = 0;
+        
+        // Enhanced steering with analog joystick support
+        if (inputs.joystickX && Math.abs(inputs.joystickX) > 0.1 && Math.abs(this.speed) > 0.02) {
+            // Use analog joystick input for smooth steering
+            this.steerInput = -inputs.joystickX * speedNorm * (this.speed > 0 ? 1 : -1) * 0.8;
+        } else {
+            // Fallback to digital input (keyboard/discrete touch)
+            if (inputs.left && Math.abs(this.speed) > 0.02) {
+                this.steerInput = speedNorm * (this.speed > 0 ? 1 : -1) * 0.7;
+            }
+            if (inputs.right && Math.abs(this.speed) > 0.02) {
+                this.steerInput = -speedNorm * (this.speed > 0 ? 1 : -1) * 0.7;
+            }
         }
 
         // Application progressive de la rotation

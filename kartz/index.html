@@ -701,7 +701,271 @@
                 transform: translateY(-10vh) translateX(100px);
                 opacity: 0;
             }
+        }        /* Mobile Touch Controls */
+        .mobile-controls {
+            display: none;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 200;
         }
+
+        .mobile-controls.show {
+            display: block;
+        }
+
+        /* Virtual Joystick */
+        .virtual-joystick {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 120px;
+            height: 120px;
+            pointer-events: auto;
+        }
+
+        .joystick-base {
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 3px solid rgba(0, 212, 255, 0.3);
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .joystick-knob {
+            width: 45px;
+            height: 45px;
+            background: rgba(0, 212, 255, 0.6);
+            border: 2px solid var(--neon-blue);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+            transition: all 0.1s ease;
+        }
+
+        .joystick-knob.active {
+            background: rgba(0, 212, 255, 0.8);
+            box-shadow: 0 0 25px rgba(0, 212, 255, 0.8);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        /* Action Buttons - Right Side */
+        .action-buttons {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            pointer-events: auto;
+        }
+
+        .accelerate-button, .brake-button {
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 3px solid rgba(0, 212, 255, 0.3);
+            border-radius: 50%;
+            color: white;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+        }
+
+        .accelerate-button {
+            background: rgba(0, 255, 136, 0.15);
+            border-color: var(--neon-green);
+        }
+
+        .brake-button {
+            background: rgba(255, 0, 128, 0.15);
+            border-color: var(--neon-pink);
+        }        .accelerate-button:active, .accelerate-button.pressed {
+            background: rgba(0, 255, 136, 0.4);
+            border-color: var(--neon-green);
+            box-shadow: 0 0 25px rgba(0, 255, 136, 0.7);
+            transform: scale(1.1);
+        }
+
+        .brake-button:active, .brake-button.pressed {
+            background: rgba(255, 0, 128, 0.4);
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 25px rgba(255, 0, 128, 0.7);
+            transform: scale(1.1);
+        }
+
+        /* Additional Controls */
+        .additional-controls {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .drift-button {
+            width: 55px;
+            height: 55px;
+            background: rgba(255, 107, 53, 0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--primary-color);
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+        }
+
+        .drift-button:active, .drift-button.pressed {
+            background: rgba(255, 107, 53, 0.4);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 20px rgba(255, 107, 53, 0.7);
+            transform: scale(1.1);
+        }        /* Zoom Controls */
+        .zoom-buttons {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            display: flex;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .zoom-in, .zoom-out {
+            width: 45px;
+            height: 45px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+        }
+
+        .zoom-in:active, .zoom-out:active {
+            background: rgba(0, 212, 255, 0.3);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+        /* Camera Touch Area */
+        .camera-touch-area {
+            position: absolute;
+            top: 15%;
+            left: 15%;
+            width: 70%;
+            height: 70%;
+            background: rgba(255, 255, 255, 0.02);
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            text-align: center;
+            pointer-events: auto;
+            user-select: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .camera-touch-area.active {
+            opacity: 0.8;
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+
+        /* Mobile UI Adjustments */
+        @media (max-width: 768px) and (orientation: landscape) {
+            #ui {
+                top: 5px;
+                left: 5px;
+                font-size: 12px;
+                padding: 8px;
+                min-width: 120px;
+            }
+
+            #minimap {
+                width: 100px;
+                height: 100px;
+                top: 5px;
+                right: 5px;
+            }
+
+            #controls {
+                display: none;
+            }
+
+            .mobile-ui-info {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                text-align: center;
+                color: white;
+                font-size: 16px;
+                background: rgba(0, 0, 0, 0.7);
+                padding: 20px;
+                border-radius: 15px;
+                max-width: 300px;
+                z-index: 300;
+            }
+        }
+
+        @media (max-width: 768px) and (orientation: portrait) {
+            .mobile-ui-info {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                text-align: center;
+                color: white;
+                font-size: 18px;
+                background: rgba(0, 0, 0, 0.8);
+                padding: 30px;
+                border-radius: 15px;
+                max-width: 80%;
+                z-index: 300;
+            }
+
+            #startScreen h1 {
+                font-size: 2em;
+            }
+
+            #startButton {
+                padding: 15px 30px;
+                font-size: 1em;
+            }
+        }
+
+        /* ...existing code... */
     </style>
 </head>
 
@@ -758,6 +1022,48 @@
         <div id="minimap">
             <canvas id="minimapCanvas" width="200" height="200"></canvas>
         </div>
+    </div>    <!-- Mobile Touch Controls -->
+    <div id="mobileControls" class="mobile-controls">
+        <!-- Camera Touch Area -->
+        <div id="cameraTouchArea" class="camera-touch-area">
+            📹 Zone tactile caméra<br>
+            Glissez pour pivoter
+        </div>
+
+        <!-- Virtual Joystick (Left Side) -->
+        <div id="virtualJoystick" class="virtual-joystick">
+            <div class="joystick-base">
+                <div id="joystickKnob" class="joystick-knob"></div>
+            </div>
+        </div>
+
+        <!-- Action Buttons (Right Side) -->
+        <div class="action-buttons">
+            <div id="accelerateButton" class="accelerate-button">⬆</div>
+            <div id="brakeButton" class="brake-button">⬇</div>
+        </div>
+
+        <!-- Additional Controls (Top Right) -->
+        <div class="additional-controls">
+            <div id="driftButton" class="drift-button">🏎️</div>
+        </div>
+
+        <!-- Zoom Controls (Top Left) -->
+        <div class="zoom-buttons">
+            <div id="touchZoomIn" class="zoom-in">+</div>
+            <div id="touchZoomOut" class="zoom-out">−</div>
+        </div>
+    </div>
+
+    <!-- Mobile UI Information -->
+    <div id="mobileUIInfo" class="mobile-ui-info" style="display: none;">
+        <h3>📱 Mode Mobile Détecté</h3>
+        <p>Tournez votre appareil en mode paysage pour une meilleure expérience de jeu !</p>
+        <p>Contrôles tactiles disponibles une fois le jeu lancé.</p>
+        <button onclick="document.getElementById('mobileUIInfo').style.display='none'" 
+                style="margin-top: 15px; padding: 10px 20px; background: var(--neon-blue); border: none; border-radius: 20px; color: white; cursor: pointer;">
+            Compris !
+        </button>
     </div>
 
     <!-- Three.js -->
