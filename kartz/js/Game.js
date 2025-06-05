@@ -15,6 +15,9 @@ class Game {
         this.raceFinished = false;
         this.playerLaps = 0;
         this.aiLaps = [];
+        
+        // État de pause
+        this.isPaused = false;
 
         this.init();
     }
@@ -24,7 +27,7 @@ class Game {
         this.setupLighting();        // Initialiser les managers
         this.audioManager = new AudioManager(this);
         this.uiManager = new UIManager(this);
-        this.inputManager = new InputManager();
+        this.inputManager = new InputManager(this);
         this.rainManager = new RainManager(this);
         
         // Créer les éléments de jeu
@@ -112,7 +115,7 @@ class Game {
         // Emit gameStarted event for any other listeners
         document.dispatchEvent(new CustomEvent('gameStarted'));
     }update() {
-        if (!this.gameStarted || this.raceFinished) return;
+        if (!this.gameStarted || this.raceFinished || this.isPaused) return;
 
         // Mettre à jour l'input manager pour la rotation de caméra
         this.inputManager.update();
@@ -198,6 +201,30 @@ class Game {
         this.audioManager.playEffect('victory');
         this.audioManager.stopRaceMusic();
         this.uiManager.showWinner(message);
+    }
+
+    pauseGame() {
+        this.isPaused = true;
+        
+        // Mettre en pause la musique si elle joue
+        if (this.audioManager && this.audioManager.currentMusicElement) {
+            this.audioManager.currentMusicElement.pause();
+        }
+        
+        console.log('Jeu mis en pause');
+    }
+
+    resumeGame() {
+        this.isPaused = false;
+        
+        // Reprendre la musique si elle était en cours
+        if (this.audioManager && this.audioManager.currentMusicElement && this.audioManager.musicEnabled) {
+            this.audioManager.currentMusicElement.play().catch(error => {
+                console.error('Erreur lors de la reprise de la musique:', error);
+            });
+        }
+        
+        console.log('Jeu repris');
     }
 
     animate() {

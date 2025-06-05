@@ -1,6 +1,7 @@
 // InputManager.js - Gestionnaire des entrées utilisateur
 class InputManager {
-    constructor() {
+    constructor(game = null) {
+        this.game = game;
         this.keys = {
             up: false,
             down: false,
@@ -402,10 +403,14 @@ class InputManager {
       setupCameraTouchArea() {
         const touchArea = document.getElementById('cameraTouchArea');
         if (!touchArea) return;
-        
-        touchArea.addEventListener('touchstart', (e) => {
+          touchArea.addEventListener('touchstart', (e) => {
             e.preventDefault();
             e.stopPropagation();
+            
+            // Check if game is paused
+            if (this.game && this.game.isPaused) {
+                return;
+            }
             
             if (e.touches.length === 1) {
                 // Only activate camera if touch is not on other controls
@@ -420,10 +425,14 @@ class InputManager {
                 }
             }
         }, { passive: false });
-        
-        touchArea.addEventListener('touchmove', (e) => {
+          touchArea.addEventListener('touchmove', (e) => {
             e.preventDefault();
             if (!this.isCameraTouching) return;
+            
+            // Check if game is paused
+            if (this.game && this.game.isPaused) {
+                return;
+            }
             
             // Find the specific touch for camera
             for (let touch of e.touches) {
@@ -608,15 +617,19 @@ class InputManager {
         
         // Update zoom level with constraints
         this.zoomLevel = Math.max(this.minZoom, Math.min(this.maxZoom, this.zoomLevel + delta));
-    }
-
-    handleMouseDown(event) {
+    }    handleMouseDown(event) {
         // Only handle left mouse button for camera rotation
         if (event.button === 0) {
             // Check if game UI is visible (game is running)
             const startScreen = document.getElementById('startScreen');
             if (startScreen && startScreen.style.display !== 'none') {
                 console.log('Game not started yet, ignoring mouse input');
+                return;
+            }
+            
+            // Check if game is paused
+            if (this.game && this.game.isPaused) {
+                console.log('Game is paused, ignoring mouse input');
                 return;
             }
             
@@ -627,10 +640,13 @@ class InputManager {
             console.log('Mouse down - starting camera rotation');
             event.preventDefault();
         }
-    }
-
-    handleMouseMove(event) {
+    }    handleMouseMove(event) {
         if (!this.isMouseDown) return;
+        
+        // Check if game is paused
+        if (this.game && this.game.isPaused) {
+            return;
+        }
         
         const deltaX = event.clientX - this.lastMouseX;
         const deltaY = event.clientY - this.lastMouseY;
@@ -651,14 +667,19 @@ class InputManager {
         console.log(`Camera rotation: X=${this.cameraRotationX.toFixed(3)}, Y=${this.cameraRotationY.toFixed(3)}`);
         event.preventDefault();
     }
-    
-    handleMouseUp(event) {
+      handleMouseUp(event) {
         if (event.button === 0) {
+            // Check if game is paused - if so, ignore this event to prevent camera getting stuck
+            if (this.game && this.game.isPaused) {
+                this.isMouseDown = false; // Reset mouse state but don't change cursor
+                return;
+            }
+            
             this.isMouseDown = false;
             document.body.style.cursor = 'grab';
             console.log('Mouse up - ending camera rotation');
         }
-    }    // Main method to get combined inputs from keyboard/mouse and touch controls
+    }// Main method to get combined inputs from keyboard/mouse and touch controls
     getInputs() {
         return {
             // Combine keyboard and touch inputs

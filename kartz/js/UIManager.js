@@ -1,10 +1,18 @@
 // UIManager.js - Gestionnaire de l'interface utilisateur
-class UIManager {
-    constructor(game) {
+class UIManager {    constructor(game) {
         this.game = game;
         this.startScreen = document.getElementById('startScreen');
         this.gameUI = document.getElementById('ui');
-        this.trafficLight = document.getElementById('trafficLight');        this.winner = document.getElementById('winner');
+        this.trafficLight = document.getElementById('trafficLight');
+        this.winner = document.getElementById('winner');
+        
+        // Menu pause
+        this.pauseButton = document.getElementById('pauseButton');
+        this.pauseMenu = document.getElementById('pauseMenu');
+        this.resumeButton = document.getElementById('resumeButton');
+        this.isPaused = false;
+        
+        // Boutons de contrôle dans le menu pause
         this.musicToggle = document.getElementById('musicToggle');
         this.volumeSlider = document.getElementById('volumeSlider');
         this.rainToggle = document.getElementById('rainToggle');
@@ -12,7 +20,7 @@ class UIManager {
         // Minimap elements
         this.minimap = document.getElementById('minimap');
         this.minimapCanvas = document.getElementById('minimapCanvas');
-        this.minimapCtx = this.minimapCanvas.getContext('2d');
+        this.minimapCtx = this.minimapCanvas ? this.minimapCanvas.getContext('2d') : null;
         this.minimapScale = 0.5; // Scale factor for track to minimap conversion
         this.minimapCenter = { x: 100, y: 100 }; // Center of minimap canvas
 
@@ -27,28 +35,49 @@ class UIManager {
                 this.volumeSlider.value = this.game.audioManager.masterVolume * 100;
             }
         }, 100);
-    }
-
-    setupEventListeners() {
+    }    setupEventListeners() {
         // Bouton de démarrage
         const startButton = document.getElementById('startButton');
-        startButton.addEventListener('click', () => {
-            this.game.startGame();
-        });        // Boutons de contrôle audio
-        this.musicToggle.addEventListener('click', () => {
-            this.toggleMusic();
-        });
+        if (startButton) {
+            startButton.addEventListener('click', () => {
+                this.game.startGame();
+            });
+        }
 
-        // Bouton de contrôle de la pluie
-        this.rainToggle?.addEventListener('click', () => {
-            this.toggleRain();
-        }); 
+        // Bouton pause et menu pause
+        if (this.pauseButton) {
+            this.pauseButton.addEventListener('click', () => {
+                this.togglePause();
+            });
+        }
 
-        this.volumeSlider?.addEventListener('input', (event) => {
-            const value = parseFloat(event.target.value) / 100;
-            console.log('Setting volume to:', value);
-            this.game.audioManager.setVolume(value);
-        });
+        if (this.resumeButton) {
+            this.resumeButton.addEventListener('click', () => {
+                this.togglePause();
+            });
+        }
+
+        // Boutons de contrôle audio dans le menu pause
+        if (this.musicToggle) {
+            this.musicToggle.addEventListener('click', () => {
+                this.toggleMusic();
+            });
+        }
+
+        // Bouton de contrôle de la pluie dans le menu pause
+        if (this.rainToggle) {
+            this.rainToggle.addEventListener('click', () => {
+                this.toggleRain();
+            });
+        }
+
+        if (this.volumeSlider) {
+            this.volumeSlider.addEventListener('input', (event) => {
+                const value = parseFloat(event.target.value) / 100;
+                console.log('Setting volume to:', value);
+                this.game.audioManager.setVolume(value);
+            });
+        }
 
         // Bouton rejouer
         document.querySelector('#winner button')?.addEventListener('click', () => {
@@ -59,14 +88,28 @@ class UIManager {
         window.addEventListener('resize', () => {
             this.onWindowResize();
         });
-    }
 
-    hideStartScreen() {
-        this.startScreen.style.display = 'none';
-    }
-    showGameUI() {
-        this.gameUI.style.display = 'block';
-        this.minimap.style.display = 'block';
+        // Gestion de la touche Échap pour le menu pause
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'Escape' && this.game.gameStarted) {
+                this.togglePause();
+                event.preventDefault();
+            }
+        });
+    }    hideStartScreen() {
+        if (this.startScreen) {
+            this.startScreen.style.display = 'none';
+        }
+    }    showGameUI() {
+        if (this.gameUI) {
+            this.gameUI.style.display = 'block';
+        }
+        if (this.pauseButton) {
+            this.pauseButton.style.display = 'flex';
+        }
+        if (this.minimap) {
+            this.minimap.style.display = 'block';
+        }
         this.updateVolumeSlider();
         this.drawMinimapTrack();
     }
@@ -74,49 +117,53 @@ class UIManager {
         if (this.volumeSlider) {
             this.volumeSlider.value = this.game.audioManager.masterVolume * 100;
         }
-    }
-
-    showTrafficLights() {
-        this.trafficLight.style.display = 'block';
+    }    showTrafficLights() {
+        if (this.trafficLight) {
+            this.trafficLight.style.display = 'block';
+        }
         this.resetTrafficLights();
     }
 
     hideTrafficLights() {
         setTimeout(() => {
-            this.trafficLight.style.display = 'none';
+            if (this.trafficLight) {
+                this.trafficLight.style.display = 'none';
+            }
         }, 1000);
-    }
-
-    resetTrafficLights() {
+    }resetTrafficLights() {
         const lights = ['redLight', 'yellowLight', 'greenLight'];
         lights.forEach(lightId => {
             const light = document.getElementById(lightId);
-            light.classList.remove('red', 'yellow', 'green');
-            light.classList.add('off');
+            if (light) {
+                light.classList.remove('red', 'yellow', 'green');
+                light.classList.add('off');
+            }
         });
-    }
-
-    updateTrafficLight(color, state) {
+    }    updateTrafficLight(color, state) {
         const lightElement = document.getElementById(`${color}Light`);
-
-        if (state) {
-            lightElement.classList.remove('off');
-            lightElement.classList.add(color);
-        } else {
-            lightElement.classList.remove(color);
-            lightElement.classList.add('off');
+        
+        if (lightElement) {
+            if (state) {
+                lightElement.classList.remove('off');
+                lightElement.classList.add(color);
+            } else {
+                lightElement.classList.remove(color);
+                lightElement.classList.add('off');
+            }
         }
-    }    updateGameStats(playerKart) {
+    }updateGameStats(playerKart) {
         // Mettre à jour le compteur de tours
-        document.getElementById('lapCount').textContent = `${this.game.getPlayerLaps()}/3`;
+        const lapCountElement = document.getElementById('lapCount');
+        if (lapCountElement) {
+            lapCountElement.textContent = `${this.game.getPlayerLaps()}/3`;
+        }
 
         // Mettre à jour la vitesse
         const speed = Math.floor(playerKart.getSpeed());
-        document.getElementById('speed').textContent = speed;
-
-        // Mettre à jour le niveau de zoom
-        const zoomLevel = this.game.inputManager.getZoomLevel();
-        document.getElementById('zoomLevel').textContent = `${zoomLevel.toFixed(1)}x`;
+        const speedElement = document.getElementById('speed');
+        if (speedElement) {
+            speedElement.textContent = speed;
+        }
 
         // Calculer et afficher la position (simple pour le moment)
         let position = 1;
@@ -129,25 +176,58 @@ class UIManager {
             }
         });
 
-        document.getElementById('position').textContent = position;
+        const positionElement = document.getElementById('position');
+        if (positionElement) {
+            positionElement.textContent = position;
+        }
 
         // Update minimap
         this.updateMinimap();
+    }    togglePause() {
+        this.isPaused = !this.isPaused;
+        
+        if (this.isPaused) {
+            if (this.pauseMenu) {
+                this.pauseMenu.style.display = 'block';
+            }
+            this.game.pauseGame();
+        } else {
+            if (this.pauseMenu) {
+                this.pauseMenu.style.display = 'none';
+            }
+            this.game.resumeGame();
+        }
     }
 
-    showWinner(message) {
-        document.getElementById('winnerText').textContent = message;
-        this.winner.style.display = 'block';
+    hidePauseMenu() {
+        this.isPaused = false;
+        if (this.pauseMenu) {
+            this.pauseMenu.style.display = 'none';
+        }
+    }    showWinner(message) {
+        const winnerTextElement = document.getElementById('winnerText');
+        if (winnerTextElement) {
+            winnerTextElement.textContent = message;
+        }
+        if (this.winner) {
+            this.winner.style.display = 'block';
+        }
+        // Masquer le bouton pause quand le jeu est terminé
+        if (this.pauseButton) {
+            this.pauseButton.style.display = 'none';
+        }
     }    toggleMusic() {
         const isEnabled = this.game.audioManager.toggleTheMusic();
-        this.musicToggle.innerHTML = isEnabled ? '🔇 Désactiver Musique' : '🔊 Activer Musique';
-    }
-
-    toggleRain() {
+        if (this.musicToggle) {
+            this.musicToggle.innerHTML = isEnabled ? '🔇 Désactiver Musique' : '🔊 Activer Musique';
+        }
+    }    toggleRain() {
         if (this.game.rainManager) {
             this.game.rainManager.toggle();
             const isEnabled = this.game.rainManager.rainEnabled;
-            this.rainToggle.innerHTML = isEnabled ? '🌤️ Désactiver Pluie' : '🌧️ Activer Pluie';
+            if (this.rainToggle) {
+                this.rainToggle.innerHTML = isEnabled ? '🌤️ Désactiver Pluie' : '🌧️ Activer Pluie';
+            }
         }
     }
 
@@ -185,14 +265,12 @@ class UIManager {
         setTimeout(() => {
             document.body.removeChild(messageElement);
         }, duration);
-    }
-
-    // Minimap methods
+    }    // Minimap methods
     drawMinimapTrack() {
         const ctx = this.minimapCtx;
         const track = this.game.getTrack();
         
-        if (!track || !track.trackPoints) return;
+        if (!ctx || !track || !track.trackPoints) return;
 
         // Clear canvas
         ctx.clearRect(0, 0, 200, 200);
@@ -252,10 +330,8 @@ class UIManager {
             ctx.lineWidth = 1;
             ctx.stroke();
         }
-    }
-
-    updateMinimap() {
-        if (!this.game.gameStarted || !this.trackBounds) return;
+    }    updateMinimap() {
+        if (!this.game.gameStarted || !this.trackBounds || !this.minimapCtx) return;
         
         const ctx = this.minimapCtx;
         
@@ -270,11 +346,11 @@ class UIManager {
         this.game.aiKarts.forEach((kart, index) => {
             this.drawKartOnMinimap(kart, aiColors[index], false);
         });
-    }
-
-    drawKartOnMinimap(kart, color, isPlayer = false) {
+    }    drawKartOnMinimap(kart, color, isPlayer = false) {
         const ctx = this.minimapCtx;
         const position = kart.getPosition();
+        
+        if (!ctx || !position || !this.trackBounds) return;
         
         const x = (position.x - this.trackBounds.minX) * this.minimapScale + 10;
         const y = (position.z - this.trackBounds.minZ) * this.minimapScale + 10;

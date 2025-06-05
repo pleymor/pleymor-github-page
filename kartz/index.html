@@ -64,36 +64,110 @@
         }        #ui {
             position: absolute;
             top: 20px;
-            left: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             color: white;
             z-index: 100;
-            font-size: 18px;
+            font-size: 20px;
             font-family: 'Orbitron', monospace;
             font-weight: 700;
             text-shadow: 0 0 10px var(--neon-blue), 2px 2px 4px rgba(0, 0, 0, 0.8);
             display: none;
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            text-align: center;
         }
 
         #ui div {
-            margin: 8px 0;
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: inline-block;
+            margin: 0 20px;
+            padding: 5px 10px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Menu pause */
+        #pauseMenu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 500;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--glass-border);
+            padding: 40px;
+            border-radius: 25px;
+            text-align: center;
+            color: white;
+            font-family: 'Orbitron', monospace;
+            font-size: 18px;
+            font-weight: 700;
+            display: none;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.6),
+                0 0 30px rgba(255, 255, 255, 0.1);
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        #pauseMenu h2 {
+            margin-top: 0;
+            margin-bottom: 30px;
+            font-size: 28px;
+            color: var(--neon-blue);
+            text-shadow: 0 0 20px var(--neon-blue);
+        }
+
+        #pauseMenu button {
+            font-family: 'Orbitron', monospace;
+            background: var(--glass-bg);
+            backdrop-filter: blur(5px);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 15px 25px;
+            margin: 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: block;
+            width: 100%;
+            min-width: 200px;
         }
 
-        #ui div:last-child {
-            border-bottom: none;
+        #pauseMenu button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.3s;
         }
 
-        #ui div:hover {
-            text-shadow: 0 0 15px var(--neon-green);
-            transform: translateX(5px);
+        #pauseMenu button:hover::before {
+            left: 100%;
+        }
+
+        #pauseMenu button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+            gap: 10px;
+            color: white;
+            justify-content: center;
         }
 
         #startScreen {
@@ -343,6 +417,7 @@
             border-radius: 15px;
             padding: 15px;
             max-width: 400px;
+            display: none; /* Masqué par défaut */
         }
 
         #controls button {
@@ -387,17 +462,7 @@
         #controls button:active {
             background: rgba(255, 255, 255, 0.3);
             transform: translateY(0);
-        }
-
-        .volume-control {
-            display: flex;
-            align-items: center;
-            margin-top: 8px;
-            gap: 8px;
-            color: white;
-        }
-
-        #volumeSlider {
+        }        #volumeSlider {
             width: 120px;
             height: 8px;
             -webkit-appearance: none;
@@ -423,7 +488,35 @@
             background: white;
             border-radius: 50%;
             cursor: pointer;
-        }        /* Minimap Styles */
+        }
+
+        #pauseButton {
+            position: absolute;
+            top: 20px;
+            right: 250px;
+            z-index: 150;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--glass-border);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        #pauseButton:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+            transform: translateY(-1px);
+        }/* Minimap Styles */
         #minimap {
             position: absolute;
             top: 20px;
@@ -982,17 +1075,28 @@
     <div class="particles" id="particles"></div>
 
     <div id="gameContainer">        <div id="ui">
-            <div style="border-bottom: 2px solid var(--neon-blue); padding-bottom: 8px; margin-bottom: 12px;">
-                <span style="color: var(--neon-blue);">🏁</span> Tours: <span id="lapCount">0/3</span>
+            <div><span id="speed">0</span> km/h</div>
+            <div>Position <span id="position">1</span></div>
+            <div>Tours <span id="lapCount">0/3</span></div>
+        </div>
+
+        <!-- Bouton pause -->
+        <div id="pauseButton">⏸️</div>
+
+        <!-- Menu pause -->
+        <div id="pauseMenu">
+            <h2>🏁 PAUSE 🏁</h2>
+            <button id="resumeButton">▶️ Reprendre</button>
+            <button id="musicToggle">🎵 Musique ON</button>
+            <button id="rainToggle">🌧️ Pluie OFF</button>
+            <div class="volume-control">
+                <span>🔊 Volume:</span>
+                <input type="range" id="volumeSlider" min="0" max="100" value="50">
             </div>
-            <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 5px;">
-                <span style="color: var(--neon-green);">🏆</span> Position: <span id="position">1</span>
-            </div>
-            <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 5px;">
-                <span style="color: var(--neon-pink);">⚡</span> Vitesse: <span id="speed">0</span> km/h
-            </div>
-            <div>
-                <span style="color: var(--neon-blue);">🔍</span> Zoom: <span id="zoomLevel">1.0x</span>
+            <div style="margin-top: 20px; font-size: 14px; color: var(--glass-border);">
+                🎮 Contrôles: ↑↓ Accélération/Frein • ←→ Direction<br>
+                🖱️ Molette pour Zoom • 🖱️ Clic+Glisser pour Rotation Caméra<br>
+                Échap ou ⏸️ pour Pause
             </div>
         </div><div id="startScreen">
             <h1>🏎️ KARTING 3D 🏎️</h1>
@@ -1012,11 +1116,12 @@
             <button onclick="location.reload()" style="margin-top: 20px;">
                 🏁 NOUVELLE COURSE 🏁
             </button>
-        </div><div id="controls">            <div style="font-weight: 600; margin-bottom: 8px; color: var(--neon-blue);">🎮 CONTRÔLES DE JEU</div>
+        </div>        <div id="controls" style="display: none;">
+            <div style="font-weight: 600; margin-bottom: 8px; color: var(--neon-blue);">🎮 CONTRÔLES DE JEU</div>
             ↑↓ Accélération/Frein • ←→ Direction • 🖱️ Molette pour Zoom • 🖱️ Clic+Glisser pour Rotation Caméra<br>
             <div style="margin-top: 10px;">
-                <button id="musicToggle">🎵 Musique ON</button>
-                <button id="rainToggle">🌧️ Pluie OFF</button>
+                <button id="musicToggleOld" style="display: none;">🎵 Musique ON</button>
+                <button id="rainToggleOld" style="display: none;">🌧️ Pluie OFF</button>
             </div>
         </div><!-- Minimap -->
         <div id="minimap">
@@ -1129,9 +1234,7 @@
                         particle.parentNode.removeChild(particle);
                     }
                 }, duration * 1000);
-            }
-
-            simulateLoading() {
+            }            simulateLoading() {
                 const progressBar = document.querySelector('.loading-progress');
                 let progress = 0;
                 
@@ -1142,7 +1245,9 @@
                         clearInterval(interval);
                         setTimeout(() => this.hideLoading(), 500);
                     }
-                    progressBar.style.width = progress + '%';
+                    if (progressBar) {
+                        progressBar.style.width = progress + '%';
+                    }
                 }, 200);
             }
 
