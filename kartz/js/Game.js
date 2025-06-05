@@ -108,6 +108,9 @@ class Game {
     }    update() {
         if (!this.gameStarted || this.raceFinished) return;
 
+        // Mettre à jour l'input manager pour la rotation de caméra
+        this.inputManager.update();
+
         // Mettre à jour les karts
         this.playerKart.update(this.inputManager.getInputs());
         this.aiKarts.forEach(kart => kart.update());
@@ -126,6 +129,7 @@ class Game {
         const kartPos = this.playerKart.getPosition();
         const kartRot = this.playerKart.getRotation();
         const zoomLevel = this.inputManager.getZoomLevel();
+        const inputs = this.inputManager.getInputs();
 
         // Position de la caméra derrière le kart avec zoom
         const baseCameraDistance = 15;
@@ -133,14 +137,29 @@ class Game {
         
         // Apply zoom to both distance and height for better zoom effect
         const cameraDistance = baseCameraDistance * zoomLevel;
-        const cameraHeight = baseCameraHeight * (0.7 + zoomLevel * 0.3); // Height changes less dramatically
-
-        const cameraX = kartPos.x - Math.sin(kartRot) * cameraDistance;
-        const cameraZ = kartPos.z - Math.cos(kartRot) * cameraDistance;
-        const cameraY = kartPos.y + cameraHeight;
+        const cameraHeight = baseCameraHeight * (0.7 + zoomLevel * 0.3); // Height changes less dramatically        // Calculate base camera angle from kart rotation
+        let cameraAngleH = kartRot + inputs.cameraRotationX; // Horizontal rotation around kart
+        let cameraAngleV = inputs.cameraRotationY; // Vertical angle
+        
+        // Debug logging
+        if (Math.abs(inputs.cameraRotationX) > 0.001 || Math.abs(inputs.cameraRotationY) > 0.001) {
+            console.log(`Using camera rotation: X=${inputs.cameraRotationX.toFixed(3)}, Y=${inputs.cameraRotationY.toFixed(3)}`);
+        }
+        
+        // Calculate camera position with rotation
+        const cameraX = kartPos.x - Math.sin(cameraAngleH) * cameraDistance * Math.cos(cameraAngleV);
+        const cameraZ = kartPos.z - Math.cos(cameraAngleH) * cameraDistance * Math.cos(cameraAngleV);
+        const cameraY = kartPos.y + cameraHeight + Math.sin(cameraAngleV) * cameraDistance;
 
         this.camera.position.set(cameraX, cameraY, cameraZ);
-        this.camera.lookAt(kartPos.x, kartPos.y + 2, kartPos.z);
+        
+        // Look at target with slight vertical offset for better view
+        const lookAtTarget = new THREE.Vector3(
+            kartPos.x, 
+            kartPos.y + 2, 
+            kartPos.z
+        );
+        this.camera.lookAt(lookAtTarget);
     }
 
     onLapCompleted(kart) {

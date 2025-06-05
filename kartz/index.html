@@ -25,9 +25,7 @@
 
         * {
             box-sizing: border-box;
-        }
-
-        body {
+        }        body {
             margin: 0;
             padding: 0;
             background: var(--dark-bg);
@@ -35,6 +33,7 @@
             font-family: 'Exo 2', 'Arial', sans-serif;
             font-weight: 400;
             background: radial-gradient(ellipse at center, #1a1a2e 0%, #000 100%);
+            cursor: grab;
         }
 
         /* Animated background particles */
@@ -735,7 +734,7 @@
             <h1>🏎️ KARTING 3D 🏎️</h1>
             <p>⚡ EXPÉRIENCE DE COURSE ULTIME ⚡</p>
             <p>🏁 Course de 3 tours sur circuit procédural dynamique</p>
-            <p>🎮 Contrôles: ↑↓ Accélération/Frein • ←→ Direction • 🖱️ Molette pour Zoom</p>            <p>🌧️ Système météo • 🎵 Audio immersif • 🗺️ Radar temps réel</p>
+            <p>🎮 Contrôles: ↑↓ Accélération/Frein • ←→ Direction • 🖱️ Molette pour Zoom • 🖱️ Clic+Glisser pour Rotation Caméra</p>            <p>🌧️ Système météo • 🎵 Audio immersif • 🗺️ Radar temps réel</p>
             <button id="startButton">
                 🚀 LANCER LA COURSE
             </button>
@@ -749,9 +748,8 @@
             <button onclick="location.reload()" style="margin-top: 20px;">
                 🏁 NOUVELLE COURSE 🏁
             </button>
-        </div><div id="controls">
-            <div style="font-weight: 600; margin-bottom: 8px; color: var(--neon-blue);">🎮 CONTRÔLES DE JEU</div>
-            ↑↓ Accélération/Frein • ←→ Direction • 🖱️ Molette pour Zoom<br>
+        </div><div id="controls">            <div style="font-weight: 600; margin-bottom: 8px; color: var(--neon-blue);">🎮 CONTRÔLES DE JEU</div>
+            ↑↓ Accélération/Frein • ←→ Direction • 🖱️ Molette pour Zoom • 🖱️ Clic+Glisser pour Rotation Caméra<br>
             <div style="margin-top: 10px;">
                 <button id="musicToggle">🎵 Musique ON</button>
                 <button id="rainToggle">🌧️ Pluie OFF</button>
@@ -859,11 +857,10 @@
         const loadingManager = new LoadingManager();
 
         // Instance globale du jeu
-        let game;
-
-        // Initialiser le jeu quand la page est chargée
+        let game;        // Initialiser le jeu quand la page est chargée
         document.addEventListener('DOMContentLoaded', () => {
             game = new Game();
+            window.game = game; // Expose game globally for debugging
         });
 
         // Gestion du redimensionnement de la fenêtre

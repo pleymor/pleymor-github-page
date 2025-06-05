@@ -115,6 +115,7 @@ php -S localhost:8000
 | → / D | Tourner à droite |
 | 🖱️ Molette | Zoom caméra |
 | + / - | Zoom caméra (clavier) |
+| 🖱️ Clic+Glisser | Rotation caméra autour du kart |
 
 ### Contrôles Interface
 - **🔇 Désactiver Musique** : Active/désactive la musique de fond
