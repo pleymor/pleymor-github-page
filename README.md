@@ -9,4 +9,6 @@ Uploader ses fichiers (index.html, etc.).
 
 Aller dans Settings → Pages → Source → choisir main branch, / (root).
 
-L’URL du site sera automatiquement générée (exemple : https://nom-utilisateur.github.io/nom-du-repo/).
+L’URL du site sera automatiquement générée.
+
+Exemple pour celle-ci: https://pleymor.github.io/pleymor-github-page/.
