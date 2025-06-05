@@ -66,11 +66,12 @@
             width: 100vw;
             height: 100vh;
             position: relative;
-        }        #ui {
+        }        
+        
+        #ui {
             position: absolute;
             top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 60px;
             color: white;
             z-index: 100;
             font-size: 20px;
@@ -498,11 +499,8 @@
         #pauseButton {
             position: absolute;
             top: 20px;
-            right: 250px;
+            left: 20px;
             z-index: 150;
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: 2px solid var(--glass-border);
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -512,7 +510,6 @@
             display: none;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
             transition: all 0.3s ease;
         }
 
@@ -526,8 +523,8 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            width: 220px;
-            height: 220px;
+            width: 100px;
+            height: 100px;
             background: var(--glass-bg);
             backdrop-filter: blur(15px);
             border: 2px solid var(--glass-border);
@@ -538,34 +535,11 @@
                 0 15px 35px rgba(0, 0, 0, 0.3),
                 0 0 20px rgba(255, 255, 255, 0.1);
             overflow: hidden;
-        }        #minimap::before {
-            content: 'RADAR';
-            position: absolute;
-            top: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-family: 'Orbitron', monospace;
-            font-size: 12px;
-            font-weight: 700;
-            color: white;
-            text-shadow: 
-                0 0 10px var(--neon-blue),
-                0 0 20px var(--neon-blue),
-                2px 2px 4px rgba(0, 0, 0, 0.8),
-                -2px -2px 4px rgba(0, 0, 0, 0.8);
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(5px);
-            padding: 4px 8px;
-            border-radius: 8px;
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            z-index: 161;
         }
 
         #minimapCanvas {
             width: 100%;
             height: 100%;
-            border-radius: 18px;
-            margin-top: 20px;
         }
 
         .minimap-kart {
@@ -905,40 +879,6 @@
             transform: scale(1.1);
         }
 
-        /* Additional Controls */
-        .additional-controls {
-            position: absolute;
-            top: 30px;
-            right: 30px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            pointer-events: auto;
-        }
-
-        .drift-button {
-            width: 55px;
-            height: 55px;
-            background: rgba(255, 107, 53, 0.15);
-            backdrop-filter: blur(10px);
-            border: 2px solid var(--primary-color);
-            border-radius: 50%;
-            color: white;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            transition: all 0.2s ease;
-            touch-action: manipulation;
-        }
-
-        .drift-button:active, .drift-button.pressed {
-            background: rgba(255, 107, 53, 0.4);
-            border-color: var(--primary-color);
-            box-shadow: 0 0 20px rgba(255, 107, 53, 0.7);
-            transform: scale(1.1);
-        }        /* Zoom Controls */
         .zoom-buttons {
             position: absolute;
             top: 30px;
@@ -1068,18 +1008,12 @@
 </head>
 
 <body>
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay">
-        <div class="loading-text">🏎️ CHARGEMENT KARTING 3D 🏎️</div>
-        <div class="loading-bar">
-            <div class="loading-progress"></div>
-        </div>
-    </div>
-
     <!-- Particle Effects -->
     <div class="particles" id="particles"></div>
 
-    <div id="gameContainer">        <div id="ui">
+    <div id="gameContainer">        
+        
+        <div id="ui">
             <div><span id="speed">0</span> km/h</div>
             <div>Position <span id="position">1</span></div>
             <div>Tours <span id="lapCount">0/3</span></div>
@@ -1128,11 +1062,15 @@
                 <button id="musicToggleOld" style="display: none;">🎵 Musique ON</button>
                 <button id="rainToggleOld" style="display: none;">🌧️ Pluie OFF</button>
             </div>
-        </div><!-- Minimap -->
-        <div id="minimap">
-            <canvas id="minimapCanvas" width="200" height="200"></canvas>
         </div>
-    </div>    <!-- Mobile Touch Controls -->
+    </div>    
+        
+    <!-- Minimap -->
+    <div id="minimap">
+        <canvas id="minimapCanvas" width="200" height="200"></canvas>
+    </div>
+    
+    <!-- Mobile Touch Controls -->
     <div id="mobileControls" class="mobile-controls">
         <!-- Camera Touch Area -->
         <div id="cameraTouchArea" class="camera-touch-area">
@@ -1151,17 +1089,6 @@
         <div class="action-buttons">
             <div id="accelerateButton" class="accelerate-button">⬆</div>
             <div id="brakeButton" class="brake-button">⬇</div>
-        </div>
-
-        <!-- Additional Controls (Top Right) -->
-        <div class="additional-controls">
-            <div id="driftButton" class="drift-button">🏎️</div>
-        </div>
-
-        <!-- Zoom Controls (Top Left) -->
-        <div class="zoom-buttons">
-            <div id="touchZoomIn" class="zoom-in">+</div>
-            <div id="touchZoomOut" class="zoom-out">−</div>
         </div>
     </div>
 
@@ -1193,7 +1120,6 @@
                 this.progress = 0;
                 this.isLoading = true;
                 this.initParticles();
-                this.simulateLoading();
             }
 
             initParticles() {
@@ -1239,7 +1165,9 @@
                         particle.parentNode.removeChild(particle);
                     }
                 }, duration * 1000);
-            }            simulateLoading() {
+            }           
+            
+            simulateLoading() {
                 const progressBar = document.querySelector('.loading-progress');
                 let progress = 0;
                 
@@ -1248,7 +1176,7 @@
                     if (progress >= 100) {
                         progress = 100;
                         clearInterval(interval);
-                        setTimeout(() => this.hideLoading(), 500);
+                        setTimeout(() => this.hideLoading(), 100);
                     }
                     if (progressBar) {
                         progressBar.style.width = progress + '%';
