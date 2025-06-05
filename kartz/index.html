@@ -518,13 +518,19 @@
             border-color: var(--neon-blue);
             box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
             transform: translateY(-1px);
-        }/* Minimap Styles */
+        }        
+        
+        /* Minimap Styles */
         #minimap {
             position: absolute;
             top: 20px;
             right: 20px;
-            width: 100px;
-            height: 100px;
+            width: min(15vw, 15vh); /* Maximum 15% de la largeur ou hauteur de l'écran */
+            height: min(15vw, 15vh); /* Forme carrée, maximum 15% */
+            min-width: 80px;  /* Taille minimale pour rester lisible */
+            min-height: 80px; /* Taille minimale pour rester lisible */
+            max-width: 200px; /* Taille maximale pour ne pas être trop grande */
+            max-height: 200px; /* Taille maximale pour ne pas être trop grande */
             background: var(--glass-bg);
             backdrop-filter: blur(15px);
             border: 2px solid var(--glass-border);
@@ -600,9 +606,7 @@
 
         @keyframes spin {
             to { transform: rotate(360deg); }
-        }
-
-        /* Responsive Design */
+        }        /* Responsive Design */
         @media (max-width: 768px) {
             #startScreen h1 {
                 font-size: 3em;
@@ -619,8 +623,9 @@
             }
             
             #minimap {
-                width: 150px;
-                height: 150px;
+                /* Maintient la règle responsive principale avec un minimum plus petit sur mobile */
+                min-width: 60px;
+                min-height: 60px;
                 top: 10px;
                 right: 10px;
             }
@@ -634,9 +639,7 @@
                 font-size: 12px;
                 max-width: 300px;
             }
-        }
-
-        @media (max-width: 480px) {
+        }        @media (max-width: 480px) {
             #startScreen h1 {
                 font-size: 2.5em;
             }
@@ -647,8 +650,9 @@
             }
             
             #minimap {
-                width: 120px;
-                height: 120px;
+                /* Encore plus petit sur très petits écrans mais reste responsive */
+                min-width: 50px;
+                min-height: 50px;
             }
         }
 
@@ -938,9 +942,7 @@
             opacity: 0.8;
             background: rgba(255, 255, 255, 0.05);
             border-color: rgba(0, 212, 255, 0.3);
-        }
-
-        /* Mobile UI Adjustments */
+        }        /* Mobile UI Adjustments */
         @media (max-width: 768px) and (orientation: landscape) {
             #ui {
                 top: 5px;
@@ -951,8 +953,9 @@
             }
 
             #minimap {
-                width: 100px;
-                height: 100px;
+                /* Taille adaptée au mode paysage mobile */
+                min-width: 50px;
+                min-height: 50px;
                 top: 5px;
                 right: 5px;
             }
