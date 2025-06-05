@@ -1,336 +1,331 @@
-<!-- index.html - Version refactorisée avec architecture modulaire -->
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Karting 3D - Clean Architecture</title>
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="alternate icon" href="favicon.ico">
+    <title>🏎️ Karting 3D - Portfolio de Jeux Immersifs</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
+        :root {
+            --primary-color: #ff6b35;
+            --secondary-color: #004e89;
+            --accent-color: #1a759f;
+            --neon-blue: #00d4ff;
+            --neon-pink: #ff0080;
+            --neon-green: #00ff88;
+            --dark-bg: #0a0a0a;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        * {
             margin: 0;
             padding: 0;
-            background: #000;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
+            box-sizing: border-box;
         }
 
-        #gameContainer {
-            width: 100vw;
-            height: 100vh;
-            position: relative;
-        }
-
-        #ui {
-            position: absolute;
-            top: 20px;
-            left: 20px;
+        body {
+            font-family: 'Exo 2', Arial, sans-serif;
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #000 100%);
             color: white;
-            z-index: 100;
-            font-size: 18px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-            display: none;
+            overflow-x: hidden;
+            min-height: 100vh;
         }
 
-        #startScreen {
-            position: absolute;
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            color: white;
-            text-align: center;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(0, 212, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 0, 128, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 60% 40%, rgba(0, 255, 136, 0.03) 0%, transparent 50%);
+            animation: backgroundShift 20s ease-in-out infinite alternate;
+            z-index: -1;
         }
 
-        #startScreen h1 {
+        @keyframes backgroundShift {
+            0% { opacity: 0.3; transform: scale(1); }
+            100% { opacity: 0.6; transform: scale(1.1); }
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 60px 20px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', monospace;
             font-size: 4em;
-            margin: 0 0 20px 0;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            font-weight: 900;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, var(--neon-blue), var(--neon-pink), var(--neon-green));
+            background-size: 200% 200%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            animation: rainbowText 3s ease-in-out infinite alternate;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
         }
 
-        #startScreen p {
-            font-size: 1.2em;
-            margin: 10px 0;
+        @keyframes rainbowText {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        .header p {
+            font-size: 1.4em;
+            font-weight: 300;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Main game showcase */
+        .game-showcase {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 40px 20px;
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .game-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border: 2px solid var(--glass-border);
+            border-radius: 25px;
+            padding: 40px;
+            max-width: 500px;
+            text-align: center;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .game-card:hover::before {
+            left: 100%;
+        }
+
+        .game-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.4),
+                0 0 30px var(--neon-blue);
+            border-color: var(--neon-blue);
+        }
+
+        .game-card h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.2em;
+            margin-bottom: 20px;
+            color: var(--neon-blue);
+            text-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        .game-card p {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 30px;
             opacity: 0.9;
         }
 
-        #startButton {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        .play-button {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--primary-color), var(--neon-pink));
             border: none;
             color: white;
             padding: 20px 40px;
-            font-size: 1.5em;
+            font-size: 1.3em;
             border-radius: 50px;
             cursor: pointer;
-            margin-top: 30px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             text-transform: uppercase;
-            font-weight: bold;
             letter-spacing: 2px;
+            box-shadow: 
+                0 10px 30px rgba(255, 107, 53, 0.4),
+                0 0 20px rgba(255, 0, 128, 0.3);
         }
 
-        #startButton:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.4);
-            background: linear-gradient(45deg, #ee5a24, #ff6b6b);
+        .play-button:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 
+                0 15px 40px rgba(255, 107, 53, 0.6),
+                0 0 30px rgba(255, 0, 128, 0.5);
+            background: linear-gradient(45deg, var(--neon-pink), var(--primary-color));
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
         }
 
-        #startButton:active {
-            transform: translateY(0);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        /* Features grid */
+        .features {
+            padding: 60px 20px;
+            max-width: 1000px;
+            margin: 0 auto;
         }
 
-        #trafficLight {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 200;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 10px;
+        .features h2 {
+            font-family: 'Orbitron', monospace;
             text-align: center;
-            color: white;
-            font-size: 24px;
-            display: none;
+            font-size: 2.5em;
+            margin-bottom: 40px;
+            color: var(--neon-green);
+            text-shadow: 0 0 20px var(--neon-green);
         }
 
-        .light {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            margin: 10px auto;
-            border: 3px solid #333;
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
         }
 
-        .red {
-            background: #ff3333;
-        }
-
-        .yellow {
-            background: #ffff33;
-        }
-
-        .green {
-            background: #33ff33;
-        }
-
-        .off {
-            background: #333;
-        }
-
-        #winner {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 300;
-            background: rgba(0, 0, 0, 0.9);
-            padding: 30px;
+        .feature-item {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
             border-radius: 15px;
+            padding: 25px;
             text-align: center;
-            color: white;
-            font-size: 32px;
-            display: none;
+            transition: all 0.3s ease;
         }
 
-        #controls {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            color: white;
-            font-size: 14px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        .feature-item:hover {
+            transform: translateY(-5px);
+            border-color: var(--neon-blue);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
         }
 
-        #controls button {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 8px 12px;
-            margin: 2px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: background 0.3s;
+        .feature-item .icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            display: block;
         }
 
-        #controls button:hover {
-            background: rgba(255, 255, 255, 0.3);
+        .feature-item h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: var(--neon-blue);
         }
 
-        #controls button:active {
-            background: rgba(255, 255, 255, 0.4);
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 1px solid var(--glass-border);
+            margin-top: 60px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
         }
 
-        .volume-control {
-            display: flex;
-            align-items: center;
-            margin-top: 8px;
-            gap: 8px;
-            color: white;
+        .footer p {
+            opacity: 0.7;
+            font-size: 0.9em;
         }
 
-        #volumeSlider {
-            width: 120px;
-            height: 8px;
-            -webkit-appearance: none;
-            appearance: none;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-            outline: none;
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5em;
+            }
+            
+            .game-card {
+                padding: 30px;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
-        #volumeSlider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            background: white;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-
-        #volumeSlider::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            background: white;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-
-        /* Minimap Styles */
-        #minimap {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 200px;
-            height: 200px;
-            background: rgba(0, 0, 0, 0.7);
-            border: 2px solid #fff;
-            border-radius: 10px;
-            z-index: 150;
-            display: none;
-        }        #minimapCanvas {
-            width: 100%;
-            height: 100%;
-            border-radius: 8px;
-        }
-
-        .minimap-kart {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            border: 1px solid #fff;
-            transform: translate(-50%, -50%);
-            z-index: 160;
-        }
-
-        .minimap-kart.player {
-            background: #ff4444;
-            box-shadow: 0 0 6px #ff4444;
-        }
-
-        .minimap-kart.ai {
-            background: #44ff44;
-            box-shadow: 0 0 4px #44ff44;
-        }
-
-        .minimap-kart.ai:nth-child(3) {
-            background: #4444ff;
-            box-shadow: 0 0 4px #4444ff;
-        }
-
-        .minimap-kart.ai:nth-child(4) {
-            background: #ffff44;
-            box-shadow: 0 0 4px #ffff44;
+        /* Performance optimizations */
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
     </style>
 </head>
+<body>
+    <div class="header">
+        <h1>🏎️ KARTING 3D PORTFOLIO 🏎️</h1>
+        <p>Découvrez l'avenir du gaming avec des expériences de course immersives et des technologies web avancées</p>
+    </div>
 
-<body>    <div id="gameContainer">
-        <div id="ui">
-            <div>Tours: <span id="lapCount">0/3</span></div>
-            <div>Position: <span id="position">1</span></div>
-            <div>Vitesse: <span id="speed">0</span> km/h</div>
-            <div>Zoom: <span id="zoomLevel">1.0x</span></div>
-        </div>        <div id="startScreen">
-            <h1>🏎️ Karting 3D 🏎️</h1>
-            <p>Préparez-vous pour une course intense!</p>
-            <p>Course de 3 tours sur circuit procédural</p>
-            <p>Contrôles: ↑↓ Accélération/Frein • ←→ Direction • 🖱️ Molette ou +/- pour Zoom</p>
-            <button id="startButton">
-                🚀 Démarrer la Course 🚀
-            </button>
-        </div>
-
-        <div id="trafficLight">
-            <div>Préparez-vous!</div>
-            <div class="light red off" id="redLight"></div>
-            <div class="light yellow off" id="yellowLight"></div>
-            <div class="light green off" id="greenLight"></div>
-        </div>
-
-        <div id="winner">
-            <div id="winnerText"></div>
-            <button onclick="location.reload()">Rejouer</button>
-        </div>        <div id="controls">
-            Contrôles: ↑↓ Accélération/Frein • ←→ Direction • 🖱️ Molette ou +/- pour Zoom<br>
-            <button id="musicToggle">🔇 Désactiver Musique</button>
-            <button id="rainToggle">🌧️ Activer Pluie</button>
-            <!-- <div class="volume-control">
-                🔉 <input type="range" id="volumeSlider" min="0" max="100" value="30" step="1"> 🔊
-            </div> -->
-        </div><!-- Minimap -->
-        <div id="minimap">
-            <canvas id="minimapCanvas" width="200" height="200"></canvas>
+    <div class="game-showcase">
+        <div class="game-card">
+            <h2>🏁 KARTING 3D</h2>
+            <p>
+                Plongez dans une expérience de course révolutionnaire avec des graphismes 3D époustouflants, 
+                un système audio immersif et des effets météorologiques dynamiques. 
+                Course contre des IA intelligentes sur des circuits procéduraux uniques.
+            </p>
+            <a href="kartz/" class="play-button">🚀 JOUER MAINTENANT</a>
         </div>
     </div>
 
-    <!-- Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>    <!-- Classes modulaires -->
-    <script src="js/AudioManager.js"></script>
-    <script src="js/InputManager.js"></script>
-    <script src="js/UIManager.js"></script>
-    <script src="js/RainManager.js"></script>
-    <script src="js/Track.js"></script>
-    <script src="js/Kart.js"></script>
-    <script src="js/Game.js"></script>
+    <div class="features">
+        <h2>✨ TECHNOLOGIES AVANCÉES ✨</h2>
+        <div class="features-grid">
+            <div class="feature-item">
+                <span class="icon">🎮</span>
+                <h3>Three.js 3D Engine</h3>
+                <p>Rendu 3D haute performance avec ombres dynamiques et éclairage réaliste</p>
+            </div>
+            <div class="feature-item">
+                <span class="icon">🎵</span>
+                <h3>Audio Immersif</h3>
+                <p>Système audio hybride avec musiques de fond et effets sonores procéduraux</p>
+            </div>
+            <div class="feature-item">
+                <span class="icon">🌧️</span>
+                <h3>Météo Dynamique</h3>
+                <p>Système de particules avancé pour des effets de pluie réalistes</p>
+            </div>
+            <div class="feature-item">
+                <span class="icon">🗺️</span>
+                <h3>Radar Temps Réel</h3>
+                <p>Minimap interactive avec tracking des positions en temps réel</p>
+            </div>
+            <div class="feature-item">
+                <span class="icon">🤖</span>
+                <h3>IA Compétitive</h3>
+                <p>Intelligence artificielle avancée pour des adversaires challengeants</p>
+            </div>
+            <div class="feature-item">
+                <span class="icon">📱</span>
+                <h3>Design Responsive</h3>
+                <p>Interface adaptative pour tous les écrans et appareils</p>
+            </div>
+        </div>
+    </div>
 
-    <!-- Point d'entrée -->
-    <script>
-        // Instance globale du jeu
-        let game;
-
-        // Initialiser le jeu quand la page est chargée
-        document.addEventListener('DOMContentLoaded', () => {
-            game = new Game();
-        });
-
-        // Gestion du redimensionnement de la fenêtre
-        window.addEventListener('resize', () => {
-            if (game && game.camera && game.renderer) {
-                game.camera.aspect = window.innerWidth / window.innerHeight;
-                game.camera.updateProjectionMatrix();
-                game.renderer.setSize(window.innerWidth, window.innerHeight);
-            }
-        });
-    </script>
+    <div class="footer">
+        <p>&copy; 2025 Karting 3D Portfolio - Développé avec passion et technologies modernes</p>
+        <p>🚀 Repoussons les limites du web gaming ensemble 🚀</p>
+    </div>
 </body>
-
 </html>

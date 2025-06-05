@@ -1,0 +1,880 @@
+<!-- index.html - Version refactorisée avec architecture modulaire -->
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>🏎️ Karting 3D - Extreme Racing Experience</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="alternate icon" href="favicon.ico">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #ff6b35;
+            --secondary-color: #004e89;
+            --accent-color: #1a759f;
+            --neon-blue: #00d4ff;
+            --neon-pink: #ff0080;
+            --neon-green: #00ff88;
+            --dark-bg: #0a0a0a;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--dark-bg);
+            overflow: hidden;
+            font-family: 'Exo 2', 'Arial', sans-serif;
+            font-weight: 400;
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #000 100%);
+        }
+
+        /* Animated background particles */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(0, 212, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 0, 128, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 60% 40%, rgba(0, 255, 136, 0.03) 0%, transparent 50%);
+            animation: backgroundShift 20s ease-in-out infinite alternate;
+            z-index: -1;
+        }
+
+        @keyframes backgroundShift {
+            0% { opacity: 0.3; transform: scale(1); }
+            100% { opacity: 0.6; transform: scale(1.1); }
+        }
+
+        #gameContainer {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            z-index: 100;
+            font-size: 18px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            text-shadow: 0 0 10px var(--neon-blue), 2px 2px 4px rgba(0, 0, 0, 0.8);
+            display: none;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        #ui div {
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        #ui div:last-child {
+            border-bottom: none;
+        }
+
+        #ui div:hover {
+            text-shadow: 0 0 15px var(--neon-green);
+            transform: translateX(5px);
+        }
+
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f0f23 100%),
+                radial-gradient(ellipse at top left, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(255, 0, 128, 0.1) 0%, transparent 50%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+            text-align: center;
+            animation: startScreenGlow 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes startScreenGlow {
+            0% { filter: brightness(1) saturate(1); }
+            100% { filter: brightness(1.1) saturate(1.2); }
+        }
+
+        #startScreen h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 5em;
+            font-weight: 900;
+            margin: 0 0 30px 0;
+            text-shadow: 
+                0 0 20px var(--neon-blue),
+                0 0 40px var(--neon-pink),
+                4px 4px 8px rgba(0, 0, 0, 0.8);
+            background: linear-gradient(45deg, var(--neon-blue), var(--neon-pink), var(--neon-green));
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: rainbowText 3s ease-in-out infinite alternate;
+            letter-spacing: 3px;
+        }
+
+        @keyframes rainbowText {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        #startScreen p {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 1.3em;
+            font-weight: 300;
+            margin: 15px 0;
+            opacity: 0.9;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            max-width: 800px;
+            line-height: 1.6;
+        }
+
+        #startScreen p:first-of-type {
+            font-weight: 600;
+            font-size: 1.5em;
+            color: var(--neon-green);
+            text-shadow: 0 0 15px var(--neon-green);
+        }        #startButton {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--primary-color), var(--neon-pink));
+            border: none;
+            color: white;
+            padding: 25px 50px;
+            font-size: 1.6em;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 40px;
+            box-shadow: 
+                0 10px 30px rgba(255, 107, 53, 0.4),
+                0 0 20px rgba(255, 0, 128, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #startButton::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        #startButton:hover::before {
+            left: 100%;
+        }
+
+        #startButton:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 
+                0 15px 40px rgba(255, 107, 53, 0.6),
+                0 0 30px rgba(255, 0, 128, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            background: linear-gradient(45deg, var(--neon-pink), var(--primary-color));
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+        }
+
+        #startButton:active {
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: 
+                0 8px 25px rgba(255, 107, 53, 0.4),
+                0 0 15px rgba(255, 0, 128, 0.3);
+        }        #trafficLight {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 200;
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border: 2px solid var(--glass-border);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+            font-family: 'Orbitron', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            display: none;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.5),
+                0 0 20px rgba(255, 255, 255, 0.1);
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .light {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 15px auto;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .light::before {
+            content: '';
+            position: absolute;
+            top: 10%;
+            left: 30%;
+            width: 30%;
+            height: 30%;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            filter: blur(2px);
+        }
+
+        .red {
+            background: radial-gradient(circle at 30% 30%, #ff6666, #cc0000);
+            box-shadow: 0 0 20px #ff0000, inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .yellow {
+            background: radial-gradient(circle at 30% 30%, #ffff66, #cccc00);
+            box-shadow: 0 0 20px #ffff00, inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .green {
+            background: radial-gradient(circle at 30% 30%, #66ff66, #00cc00);
+            box-shadow: 0 0 20px #00ff00, inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .off {
+            background: radial-gradient(circle at 30% 30%, #444, #222);
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }        #winner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 300;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--neon-green);
+            padding: 40px;
+            border-radius: 25px;
+            text-align: center;
+            color: white;
+            font-family: 'Orbitron', monospace;
+            font-size: 36px;
+            font-weight: 900;
+            display: none;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.6),
+                0 0 30px var(--neon-green);
+            text-shadow: 0 0 20px var(--neon-green);
+            animation: victoryPulse 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes victoryPulse {
+            0% { 
+                box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 30px var(--neon-green);
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% { 
+                box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8), 0 0 50px var(--neon-green);
+                transform: translate(-50%, -50%) scale(1.02);
+            }
+        }
+
+        #winner button {
+            font-family: 'Orbitron', monospace;
+            background: linear-gradient(45deg, var(--neon-green), var(--accent-color));
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        #winner button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 255, 136, 0.5);
+        }        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 14px;
+            font-weight: 400;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 15px;
+            max-width: 400px;
+        }
+
+        #controls button {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--glass-bg);
+            backdrop-filter: blur(5px);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 10px 15px;
+            margin: 3px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #controls button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.3s;
+        }
+
+        #controls button:hover::before {
+            left: 100%;
+        }
+
+        #controls button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        #controls button:active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(0);
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            margin-top: 8px;
+            gap: 8px;
+            color: white;
+        }
+
+        #volumeSlider {
+            width: 120px;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        #volumeSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        #volumeSlider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+        }        /* Minimap Styles */
+        #minimap {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 220px;
+            height: 220px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border: 2px solid var(--glass-border);
+            border-radius: 20px;
+            z-index: 150;
+            display: none;
+            box-shadow: 
+                0 15px 35px rgba(0, 0, 0, 0.3),
+                0 0 20px rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }        #minimap::before {
+            content: 'RADAR';
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            color: white;
+            text-shadow: 
+                0 0 10px var(--neon-blue),
+                0 0 20px var(--neon-blue),
+                2px 2px 4px rgba(0, 0, 0, 0.8),
+                -2px -2px 4px rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            padding: 4px 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            z-index: 161;
+        }
+
+        #minimapCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 18px;
+            margin-top: 20px;
+        }
+
+        .minimap-kart {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            transform: translate(-50%, -50%);
+            z-index: 160;
+            transition: all 0.2s ease;
+        }
+
+        .minimap-kart.player {
+            background: radial-gradient(circle, var(--neon-pink), #cc0044);
+            box-shadow: 
+                0 0 10px var(--neon-pink),
+                0 0 20px rgba(255, 0, 128, 0.5);
+            border-color: white;
+            animation: playerPulse 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes playerPulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            100% { transform: translate(-50%, -50%) scale(1.2); }
+        }
+
+        .minimap-kart.ai {
+            background: radial-gradient(circle, var(--neon-green), #00aa44);
+            box-shadow: 
+                0 0 8px var(--neon-green),
+                0 0 15px rgba(0, 255, 136, 0.4);
+        }
+
+        .minimap-kart.ai:nth-child(3) {
+            background: radial-gradient(circle, var(--neon-blue), #0088cc);
+            box-shadow: 
+                0 0 8px var(--neon-blue),
+                0 0 15px rgba(0, 212, 255, 0.4);
+        }        .minimap-kart.ai:nth-child(4) {
+            background: radial-gradient(circle, #ffcc00, #ff8800);
+            box-shadow: 
+                0 0 8px #ffcc00,
+                0 0 15px rgba(255, 204, 0, 0.4);
+        }
+
+        /* Loading Animation */
+        .loading-spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--neon-blue);
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            #startScreen h1 {
+                font-size: 3em;
+            }
+            
+            #startScreen p {
+                font-size: 1.1em;
+                padding: 0 20px;
+            }
+            
+            #startButton {
+                padding: 20px 35px;
+                font-size: 1.3em;
+            }
+            
+            #minimap {
+                width: 150px;
+                height: 150px;
+                top: 10px;
+                right: 10px;
+            }
+            
+            #ui {
+                font-size: 16px;
+                padding: 15px;
+            }
+            
+            #controls {
+                font-size: 12px;
+                max-width: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #startScreen h1 {
+                font-size: 2.5em;
+            }
+            
+            #startButton {
+                padding: 15px 25px;
+                font-size: 1.1em;
+            }
+            
+            #minimap {
+                width: 120px;
+                height: 120px;
+            }
+        }
+
+        /* Performance optimizations */
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Smooth transitions */
+        .smooth-transition {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Custom scrollbar for future use */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--neon-blue);
+            border-radius: 4px;
+        }        ::-webkit-scrollbar-thumb:hover {
+            background: var(--neon-pink);
+        }
+
+        /* Loading overlay */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--dark-bg);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+
+        #loadingOverlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5em;
+            color: var(--neon-blue);
+            text-shadow: 0 0 20px var(--neon-blue);
+            margin-bottom: 30px;
+            animation: loadingPulse 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes loadingPulse {
+            0% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .loading-bar {
+            width: 300px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .loading-progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink));
+            border-radius: 3px;
+            width: 0%;
+            animation: loadingProgress 3s ease-in-out forwards;
+        }
+
+        @keyframes loadingProgress {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        /* Particle effects for enhanced visual appeal */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -2;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--neon-blue);
+            border-radius: 50%;
+            animation: float 10s infinite linear;
+            opacity: 0.3;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.3;
+            }
+            90% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(-10vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="loading-text">🏎️ CHARGEMENT KARTING 3D 🏎️</div>
+        <div class="loading-bar">
+            <div class="loading-progress"></div>
+        </div>
+    </div>
+
+    <!-- Particle Effects -->
+    <div class="particles" id="particles"></div>
+
+    <div id="gameContainer">        <div id="ui">
+            <div style="border-bottom: 2px solid var(--neon-blue); padding-bottom: 8px; margin-bottom: 12px;">
+                <span style="color: var(--neon-blue);">🏁</span> Tours: <span id="lapCount">0/3</span>
+            </div>
+            <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 5px;">
+                <span style="color: var(--neon-green);">🏆</span> Position: <span id="position">1</span>
+            </div>
+            <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 5px;">
+                <span style="color: var(--neon-pink);">⚡</span> Vitesse: <span id="speed">0</span> km/h
+            </div>
+            <div>
+                <span style="color: var(--neon-blue);">🔍</span> Zoom: <span id="zoomLevel">1.0x</span>
+            </div>
+        </div><div id="startScreen">
+            <h1>🏎️ KARTING 3D 🏎️</h1>
+            <p>⚡ EXPÉRIENCE DE COURSE ULTIME ⚡</p>
+            <p>🏁 Course de 3 tours sur circuit procédural dynamique</p>
+            <p>🎮 Contrôles: ↑↓ Accélération/Frein • ←→ Direction • 🖱️ Molette pour Zoom</p>            <p>🌧️ Système météo • 🎵 Audio immersif • 🗺️ Radar temps réel</p>
+            <button id="startButton">
+                🚀 LANCER LA COURSE
+            </button>
+        </div>        <div id="trafficLight">
+            <div style="margin-bottom: 15px; font-size: 24px;">🏁 PRÉPAREZ-VOUS! 🏁</div>
+            <div class="light red off" id="redLight"></div>
+            <div class="light yellow off" id="yellowLight"></div>
+            <div class="light green off" id="greenLight"></div>
+        </div>        <div id="winner">
+            <div id="winnerText"></div>
+            <button onclick="location.reload()" style="margin-top: 20px;">
+                🏁 NOUVELLE COURSE 🏁
+            </button>
+        </div><div id="controls">
+            <div style="font-weight: 600; margin-bottom: 8px; color: var(--neon-blue);">🎮 CONTRÔLES DE JEU</div>
+            ↑↓ Accélération/Frein • ←→ Direction • 🖱️ Molette pour Zoom<br>
+            <div style="margin-top: 10px;">
+                <button id="musicToggle">🎵 Musique ON</button>
+                <button id="rainToggle">🌧️ Pluie OFF</button>
+            </div>
+        </div><!-- Minimap -->
+        <div id="minimap">
+            <canvas id="minimapCanvas" width="200" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>    <!-- Classes modulaires -->
+    <script src="js/AudioManager.js"></script>
+    <script src="js/InputManager.js"></script>
+    <script src="js/UIManager.js"></script>
+    <script src="js/RainManager.js"></script>
+    <script src="js/Track.js"></script>
+    <script src="js/Kart.js"></script>
+    <script src="js/Game.js"></script>    <!-- Point d'entrée -->
+    <script>
+        // Loading and Particle System
+        class LoadingManager {
+            constructor() {
+                this.overlay = document.getElementById('loadingOverlay');
+                this.progress = 0;
+                this.isLoading = true;
+                this.initParticles();
+                this.simulateLoading();
+            }
+
+            initParticles() {
+                const particlesContainer = document.getElementById('particles');
+                const particleCount = 50;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    setTimeout(() => {
+                        this.createParticle(particlesContainer);
+                    }, i * 100);
+                }
+                
+                // Continue creating particles
+                setInterval(() => {
+                    if (Math.random() < 0.3) {
+                        this.createParticle(particlesContainer);
+                    }
+                }, 500);
+            }
+
+            createParticle(container) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // Random position and properties
+                const startX = Math.random() * window.innerWidth;
+                const color = ['#00d4ff', '#ff0080', '#00ff88'][Math.floor(Math.random() * 3)];
+                const size = Math.random() * 3 + 1;
+                const duration = Math.random() * 8 + 7;
+                
+                particle.style.left = startX + 'px';
+                particle.style.background = color;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.animationDuration = duration + 's';
+                particle.style.boxShadow = `0 0 ${size * 2}px ${color}`;
+                
+                container.appendChild(particle);
+                
+                // Remove particle after animation
+                setTimeout(() => {
+                    if (particle.parentNode) {
+                        particle.parentNode.removeChild(particle);
+                    }
+                }, duration * 1000);
+            }
+
+            simulateLoading() {
+                const progressBar = document.querySelector('.loading-progress');
+                let progress = 0;
+                
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15 + 5;
+                    if (progress >= 100) {
+                        progress = 100;
+                        clearInterval(interval);
+                        setTimeout(() => this.hideLoading(), 500);
+                    }
+                    progressBar.style.width = progress + '%';
+                }, 200);
+            }
+
+            hideLoading() {
+                this.overlay.classList.add('hidden');
+                this.isLoading = false;
+                
+                // Remove overlay after transition
+                setTimeout(() => {
+                    if (this.overlay.parentNode) {
+                        this.overlay.parentNode.removeChild(this.overlay);
+                    }
+                }, 500);
+            }
+        }
+
+        // Initialize loading manager immediately
+        const loadingManager = new LoadingManager();
+
+        // Instance globale du jeu
+        let game;
+
+        // Initialiser le jeu quand la page est chargée
+        document.addEventListener('DOMContentLoaded', () => {
+            game = new Game();
+        });
+
+        // Gestion du redimensionnement de la fenêtre
+        window.addEventListener('resize', () => {
+            if (game && game.camera && game.renderer) {
+                game.camera.aspect = window.innerWidth / window.innerHeight;
+                game.camera.updateProjectionMatrix();
+                game.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+    </script>
+</body>
+
+</html>
