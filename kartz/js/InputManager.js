@@ -681,7 +681,7 @@ class InputManager {
         }
     }// Main method to get combined inputs from keyboard/mouse and touch controls
     getInputs() {
-        return {
+        const inputs = {
             // Combine keyboard and touch inputs
             up: this.keys.up || this.touchStates.up,
             down: this.keys.down || this.touchStates.down,
@@ -700,5 +700,18 @@ class InputManager {
             // Zoom level from mouse wheel, keyboard, or touch
             zoomLevel: this.zoomLevel
         };
+        
+        // Debug logging for mobile input states
+        const hasAnyInput = inputs.up || inputs.down || inputs.left || inputs.right || inputs.drift || Math.abs(inputs.joystickX) > 0.1 || Math.abs(inputs.joystickY) > 0.1;
+        if (hasAnyInput && (this.isMobile || this.isTablet || this.isTouchDevice)) {
+            console.log('📱 Mobile inputs detected:', {
+                keyboard: { up: this.keys.up, down: this.keys.down, left: this.keys.left, right: this.keys.right },
+                touch: { up: this.touchStates.up, down: this.touchStates.down, left: this.touchStates.left, right: this.touchStates.right },
+                joystick: { x: this.joystick.normalizedX?.toFixed(2), y: this.joystick.normalizedY?.toFixed(2) },
+                final: { up: inputs.up, down: inputs.down, left: inputs.left, right: inputs.right }
+            });
+        }
+        
+        return inputs;
     }
 }

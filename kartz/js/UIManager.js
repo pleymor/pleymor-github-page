@@ -1,17 +1,18 @@
 // UIManager.js - Gestionnaire de l'interface utilisateur
-class UIManager {    constructor(game) {
+class UIManager {
+    constructor(game) {
         this.game = game;
         this.startScreen = document.getElementById('startScreen');
         this.gameUI = document.getElementById('ui');
         this.trafficLight = document.getElementById('trafficLight');
         this.winner = document.getElementById('winner');
-        
+
         // Menu pause
         this.pauseButton = document.getElementById('pauseButton');
         this.pauseMenu = document.getElementById('pauseMenu');
         this.resumeButton = document.getElementById('resumeButton');
         this.isPaused = false;
-        
+
         // Boutons de contrôle dans le menu pause
         this.musicToggle = document.getElementById('musicToggle');
         this.volumeSlider = document.getElementById('volumeSlider');
@@ -35,7 +36,7 @@ class UIManager {    constructor(game) {
                 this.volumeSlider.value = this.game.audioManager.masterVolume * 100;
             }
         }, 100);
-    }    setupEventListeners() {
+    } setupEventListeners() {
         // Bouton de démarrage
         const startButton = document.getElementById('startButton');
         if (startButton) {
@@ -96,11 +97,13 @@ class UIManager {    constructor(game) {
                 event.preventDefault();
             }
         });
-    }    hideStartScreen() {
+    } hideStartScreen() {
         if (this.startScreen) {
             this.startScreen.style.display = 'none';
         }
-    }    showGameUI() {
+        // Disable scrolling when game starts
+        document.body.classList.add('game-active');
+    } showGameUI() {
         if (this.gameUI) {
             this.gameUI.style.display = 'block';
         }
@@ -117,7 +120,7 @@ class UIManager {    constructor(game) {
         if (this.volumeSlider) {
             this.volumeSlider.value = this.game.audioManager.masterVolume * 100;
         }
-    }    showTrafficLights() {
+    } showTrafficLights() {
         if (this.trafficLight) {
             this.trafficLight.style.display = 'block';
         }
@@ -130,7 +133,7 @@ class UIManager {    constructor(game) {
                 this.trafficLight.style.display = 'none';
             }
         }, 1000);
-    }resetTrafficLights() {
+    } resetTrafficLights() {
         const lights = ['redLight', 'yellowLight', 'greenLight'];
         lights.forEach(lightId => {
             const light = document.getElementById(lightId);
@@ -139,9 +142,9 @@ class UIManager {    constructor(game) {
                 light.classList.add('off');
             }
         });
-    }    updateTrafficLight(color, state) {
+    } updateTrafficLight(color, state) {
         const lightElement = document.getElementById(`${color}Light`);
-        
+
         if (lightElement) {
             if (state) {
                 lightElement.classList.remove('off');
@@ -151,7 +154,7 @@ class UIManager {    constructor(game) {
                 lightElement.classList.add('off');
             }
         }
-    }updateGameStats(playerKart) {
+    } updateGameStats(playerKart) {
         // Mettre à jour le compteur de tours
         const lapCountElement = document.getElementById('lapCount');
         if (lapCountElement) {
@@ -168,7 +171,7 @@ class UIManager {    constructor(game) {
         // Calculer et afficher la position (simple pour le moment)
         let position = 1;
         const playerProgress = playerKart.trackProgress;
-        
+
         this.game.aiKarts.forEach(aiKart => {
             const aiProgress = aiKart.trackProgress;
             if (aiProgress > playerProgress) {
@@ -183,9 +186,9 @@ class UIManager {    constructor(game) {
 
         // Update minimap
         this.updateMinimap();
-    }    togglePause() {
+    } togglePause() {
         this.isPaused = !this.isPaused;
-        
+
         if (this.isPaused) {
             if (this.pauseMenu) {
                 this.pauseMenu.style.display = 'block';
@@ -204,7 +207,7 @@ class UIManager {    constructor(game) {
         if (this.pauseMenu) {
             this.pauseMenu.style.display = 'none';
         }
-    }    showWinner(message) {
+    } showWinner(message) {
         const winnerTextElement = document.getElementById('winnerText');
         if (winnerTextElement) {
             winnerTextElement.textContent = message;
@@ -216,12 +219,12 @@ class UIManager {    constructor(game) {
         if (this.pauseButton) {
             this.pauseButton.style.display = 'none';
         }
-    }    toggleMusic() {
+    } toggleMusic() {
         const isEnabled = this.game.audioManager.toggleTheMusic();
         if (this.musicToggle) {
             this.musicToggle.innerHTML = isEnabled ? '🔇 Désactiver Musique' : '🔊 Activer Musique';
         }
-    }    toggleRain() {
+    } toggleRain() {
         if (this.game.rainManager) {
             this.game.rainManager.toggle();
             const isEnabled = this.game.rainManager.rainEnabled;
@@ -269,59 +272,59 @@ class UIManager {    constructor(game) {
     drawMinimapTrack() {
         const ctx = this.minimapCtx;
         const track = this.game.getTrack();
-        
+
         if (!ctx || !track || !track.trackPoints) return;
 
         // Clear canvas
         ctx.clearRect(0, 0, 200, 200);
-        
+
         // Draw background
         ctx.fillStyle = 'rgba(20, 20, 20, 0.8)';
         ctx.fillRect(0, 0, 200, 200);
-        
+
         // Calculate track bounds for proper scaling
         let minX = Infinity, maxX = -Infinity;
         let minZ = Infinity, maxZ = -Infinity;
-        
+
         track.trackPoints.forEach(point => {
             minX = Math.min(minX, point.x);
             maxX = Math.max(maxX, point.x);
             minZ = Math.min(minZ, point.z);
             maxZ = Math.max(maxZ, point.z);
         });
-        
+
         const trackWidth = maxX - minX;
         const trackHeight = maxZ - minZ;
         const scale = Math.min(180 / trackWidth, 180 / trackHeight);
-        
+
         this.minimapScale = scale;
         this.trackBounds = { minX, maxX, minZ, maxZ };
-        
+
         // Draw track
         ctx.beginPath();
         ctx.strokeStyle = '#666';
         ctx.lineWidth = 3;
-        
+
         track.trackPoints.forEach((point, index) => {
             const x = (point.x - minX) * scale + 10;
             const y = (point.z - minZ) * scale + 10;
-            
+
             if (index === 0) {
                 ctx.moveTo(x, y);
             } else {
                 ctx.lineTo(x, y);
             }
         });
-        
+
         ctx.closePath();
         ctx.stroke();
-        
+
         // Draw start/finish line
         if (track.trackPoints.length > 0) {
             const startPoint = track.trackPoints[0];
             const startX = (startPoint.x - minX) * scale + 10;
             const startY = (startPoint.z - minZ) * scale + 10;
-            
+
             ctx.beginPath();
             ctx.arc(startX, startY, 4, 0, 2 * Math.PI);
             ctx.fillStyle = '#fff';
@@ -330,37 +333,37 @@ class UIManager {    constructor(game) {
             ctx.lineWidth = 1;
             ctx.stroke();
         }
-    }    updateMinimap() {
+    } updateMinimap() {
         if (!this.game.gameStarted || !this.trackBounds || !this.minimapCtx) return;
-        
+
         const ctx = this.minimapCtx;
-        
+
         // Redraw track background
         this.drawMinimapTrack();
-        
+
         // Draw player kart
         this.drawKartOnMinimap(this.game.playerKart, '#ff4444', true);
-        
+
         // Draw AI karts
         const aiColors = ['#44ff44', '#4444ff', '#ffff44'];
         this.game.aiKarts.forEach((kart, index) => {
             this.drawKartOnMinimap(kart, aiColors[index], false);
         });
-    }    drawKartOnMinimap(kart, color, isPlayer = false) {
+    } drawKartOnMinimap(kart, color, isPlayer = false) {
         const ctx = this.minimapCtx;
         const position = kart.getPosition();
-        
+
         if (!ctx || !position || !this.trackBounds) return;
-        
+
         const x = (position.x - this.trackBounds.minX) * this.minimapScale + 10;
         const y = (position.z - this.trackBounds.minZ) * this.minimapScale + 10;
-        
+
         // Draw kart dot
         ctx.beginPath();
         ctx.arc(x, y, isPlayer ? 4 : 3, 0, 2 * Math.PI);
         ctx.fillStyle = color;
         ctx.fill();
-        
+
         // Add glow effect for player
         if (isPlayer) {
             ctx.shadowColor = color;
@@ -370,20 +373,20 @@ class UIManager {    constructor(game) {
             ctx.fill();
             ctx.shadowBlur = 0;
         }
-        
+
         // Draw direction indicator
         const rotation = kart.getRotation();
         const dirLength = 6;
         const dirX = x + Math.sin(rotation) * dirLength;
         const dirY = y + Math.cos(rotation) * dirLength;
-        
+
         ctx.beginPath();
         ctx.moveTo(x, y);
         ctx.lineTo(dirX, dirY);
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.stroke();
-        
+
         // Add white border
         ctx.beginPath();
         ctx.arc(x, y, isPlayer ? 4 : 3, 0, 2 * Math.PI);

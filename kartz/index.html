@@ -29,11 +29,16 @@
             margin: 0;
             padding: 0;
             background: var(--dark-bg);
-            overflow: hidden;
+            overflow: auto;
             font-family: 'Exo 2', 'Arial', sans-serif;
             font-weight: 400;
             background: radial-gradient(ellipse at center, #1a1a2e 0%, #000 100%);
             cursor: grab;
+        }
+
+        /* Disable scrolling when game is active */
+        body.game-active {
+            overflow: hidden;
         }
 
         /* Animated background particles */
