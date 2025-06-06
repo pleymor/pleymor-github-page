@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Quality Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #output {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .stats {
+            background: #e8f5e8;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏁 Track Quality Testing</h1>
+        <p>This tool tests the improved track generation system to verify smooth, drivable circuits without sharp turns or dead ends.</p>
+        
+        <button onclick="generateSingleTrack()">Generate Single Track</button>
+        <button onclick="generateMultipleTracks()">Generate 5 Tracks</button>
+        <button onclick="clearOutput()">Clear Output</button>
+        
+        <div id="output"></div>
+        
+        <div class="stats" id="stats" style="display: none;">
+            <h3>Overall Statistics:</h3>
+            <div id="statsContent"></div>
+        </div>
+    </div>
+
+    <script src="js/Track.js"></script>
+    <script>
+        let outputDiv = document.getElementById('output');
+        let statsDiv = document.getElementById('stats');
+        let statsContent = document.getElementById('statsContent');
+        let trackResults = [];
+
+        // Override console.log to capture output
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            outputDiv.textContent += args.join(' ') + '\n';
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+        };
+
+        function clearOutput() {
+            outputDiv.textContent = '';
+            statsDiv.style.display = 'none';
+            trackResults = [];
+        }
+
+        function generateSingleTrack() {
+            console.log('\n' + '='.repeat(60));
+            console.log('🎯 Starting single track generation test...');
+            console.log('='.repeat(60));
+            
+            const track = new Track();
+            const startTime = performance.now();
+            
+            track.generateHighQualityTrackPoints();
+            
+            const endTime = performance.now();
+            const generationTime = (endTime - startTime).toFixed(2);
+            
+            console.log(`⏱️ Generation time: ${generationTime}ms`);
+            console.log('✅ Single track generation completed!\n');
+        }
+
+        function generateMultipleTracks() {
+            console.log('\n' + '='.repeat(60));
+            console.log('🎯 Starting multiple tracks generation test...');
+            console.log('='.repeat(60));
+            
+            trackResults = [];
+            let totalTime = 0;
+            let qualityScores = [];
+            let sharpAnglesTotal = 0;
+            
+            for (let i = 1; i <= 5; i++) {
+                console.log(`\n--- Track ${i}/5 ---`);
+                
+                const track = new Track();
+                const startTime = performance.now();
+                
+                track.generateHighQualityTrackPoints();
+                
+                const endTime = performance.now();
+                const generationTime = endTime - startTime;
+                totalTime += generationTime;
+                
+                // Get the last diagnosis results (we need to call diagnose again to get return value)
+                const diagnosis = track.diagnoseTrackQuality();
+                if (diagnosis) {
+                    qualityScores.push(diagnosis.qualityScore);
+                    sharpAnglesTotal += diagnosis.sharpAngles;
+                    trackResults.push({
+                        trackNumber: i,
+                        qualityScore: diagnosis.qualityScore,
+                        sharpAngles: diagnosis.sharpAngles,
+                        minSegmentLength: diagnosis.minSegmentLength,
+                        avgSegmentLength: diagnosis.avgSegmentLength,
+                        totalLength: diagnosis.totalLength,
+                        generationTime: generationTime
+                    });
+                }
+                
+                console.log(`⏱️ Track ${i} generation time: ${generationTime.toFixed(2)}ms`);
+            }
+            
+            // Display overall statistics
+            if (qualityScores.length > 0) {
+                const avgQuality = qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length;
+                const minQuality = Math.min(...qualityScores);
+                const maxQuality = Math.max(...qualityScores);
+                const avgTime = totalTime / 5;
+                const highQualityTracks = qualityScores.filter(score => score >= 80).length;
+                
+                console.log('\n' + '='.repeat(60));
+                console.log('📊 OVERALL STATISTICS');
+                console.log('='.repeat(60));
+                console.log(`🏆 High quality tracks (≥80): ${highQualityTracks}/5 (${(highQualityTracks/5*100).toFixed(1)}%)`);
+                console.log(`⭐ Average quality score: ${avgQuality.toFixed(1)}/100`);
+                console.log(`📈 Quality range: ${minQuality.toFixed(1)} - ${maxQuality.toFixed(1)}`);
+                console.log(`⚠️ Total sharp angles across all tracks: ${sharpAnglesTotal}`);
+                console.log(`⏱️ Average generation time: ${avgTime.toFixed(2)}ms`);
+                
+                // Show detailed stats in the stats div
+                statsContent.innerHTML = `
+                    <strong>Success Rate:</strong> ${highQualityTracks}/5 tracks achieved high quality (≥80/100)<br>
+                    <strong>Quality Scores:</strong> ${qualityScores.map(s => s.toFixed(0)).join(', ')}<br>
+                    <strong>Average Quality:</strong> ${avgQuality.toFixed(1)}/100<br>
+                    <strong>Sharp Angles Total:</strong> ${sharpAnglesTotal} (should be minimal)<br>
+                    <strong>Average Generation Time:</strong> ${avgTime.toFixed(2)}ms
+                `;
+                statsDiv.style.display = 'block';
+            }
+            
+            console.log('\n✅ Multiple tracks generation test completed!');
+        }
+
+        // Initialize on page load
+        console.log('🏁 Track Quality Testing Tool Ready');
+        console.log('Click "Generate Single Track" or "Generate 5 Tracks" to test the improved system');
+    </script>
+</body>
+</html>
