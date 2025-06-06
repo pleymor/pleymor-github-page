@@ -11,12 +11,11 @@ class UIManager {
         this.pauseButton = document.getElementById('pauseButton');
         this.pauseMenu = document.getElementById('pauseMenu');
         this.resumeButton = document.getElementById('resumeButton');
-        this.isPaused = false;
-
-        // Boutons de contrôle dans le menu pause
+        this.isPaused = false;        // Boutons de contrôle dans le menu pause
         this.musicToggle = document.getElementById('musicToggle');
         this.volumeSlider = document.getElementById('volumeSlider');
         this.rainToggle = document.getElementById('rainToggle');
+        this.regenerateTrackButton = document.getElementById('regenerateTrackButton');
 
         // Minimap elements
         this.minimap = document.getElementById('minimap');
@@ -63,12 +62,17 @@ class UIManager {
             this.musicToggle.addEventListener('click', () => {
                 this.toggleMusic();
             });
-        }
-
-        // Bouton de contrôle de la pluie dans le menu pause
+        }        // Bouton de contrôle de la pluie dans le menu pause
         if (this.rainToggle) {
             this.rainToggle.addEventListener('click', () => {
                 this.toggleRain();
+            });
+        }
+
+        // Bouton de régénération du circuit dans le menu pause
+        if (this.regenerateTrackButton) {
+            this.regenerateTrackButton.addEventListener('click', () => {
+                this.regenerateTrack();
             });
         }
 
@@ -88,12 +92,15 @@ class UIManager {
         // Redimensionnement de la fenêtre
         window.addEventListener('resize', () => {
             this.onWindowResize();
-        });
-
-        // Gestion de la touche Échap pour le menu pause
+        });        // Gestion des touches pour le menu pause
         document.addEventListener('keydown', (event) => {
             if (event.code === 'Escape' && this.game.gameStarted) {
                 this.togglePause();
+                event.preventDefault();
+            }
+            // Touche R pour régénérer le circuit quand le jeu est en pause
+            if (event.code === 'KeyR' && this.isPaused && this.game.gameStarted) {
+                this.regenerateTrack();
                 event.preventDefault();
             }
         });
@@ -224,12 +231,53 @@ class UIManager {
         if (this.musicToggle) {
             this.musicToggle.innerHTML = isEnabled ? '🔇 Désactiver Musique' : '🔊 Activer Musique';
         }
-    } toggleRain() {
+    }    toggleRain() {
         if (this.game.rainManager) {
             this.game.rainManager.toggle();
             const isEnabled = this.game.rainManager.rainEnabled;
             if (this.rainToggle) {
                 this.rainToggle.innerHTML = isEnabled ? '🌤️ Désactiver Pluie' : '🌧️ Activer Pluie';
+            }
+        }
+    }    async regenerateTrack() {
+        // Désactiver temporairement le bouton pour éviter les clics multiples
+        if (this.regenerateTrackButton) {
+            this.regenerateTrackButton.disabled = true;
+            this.regenerateTrackButton.innerHTML = '⏳ Génération...';
+        }
+
+        // Afficher l'overlay de loading
+        const trackRegenOverlay = document.getElementById('trackRegenOverlay');
+        if (trackRegenOverlay) {
+            trackRegenOverlay.style.display = 'flex';
+        }
+
+        try {
+            // Régénérer le circuit via le jeu
+            await this.game.regenerateTrack();
+            
+            // Mettre à jour la minimap
+            this.drawMinimapTrack();
+            
+            // Afficher un message de succès
+            this.showMessage('✅ Nouveau circuit généré !', 2000);
+            
+            // Fermer le menu pause et reprendre le jeu
+            this.togglePause();
+            
+        } catch (error) {
+            console.error('Erreur lors de la régénération du circuit:', error);
+            this.showMessage('❌ Erreur lors de la génération du circuit', 3000);
+        } finally {
+            // Masquer l'overlay de loading
+            if (trackRegenOverlay) {
+                trackRegenOverlay.style.display = 'none';
+            }
+            
+            // Réactiver le bouton
+            if (this.regenerateTrackButton) {
+                this.regenerateTrackButton.disabled = false;
+                this.regenerateTrackButton.innerHTML = '🔄 Nouveau Circuit (R)';
             }
         }
     }

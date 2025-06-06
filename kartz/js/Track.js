@@ -16,27 +16,63 @@ class Track {
         this.generateTrees();
         this.createStartLine();
     }
-    
-    generateTrackPoints() {
+      generateTrackPoints() {
         const numPoints = 1500;
         const baseRadius = 150;
+        
+        // Génération de paramètres aléatoires pour un circuit unique
+        const randomSeed = Math.random() * 1000;
+        const majorFreq1 = 0.3 + Math.random() * 0.4;  // Entre 0.3 et 0.7
+        const majorFreq2 = 0.2 + Math.random() * 0.3;  // Entre 0.2 et 0.5
+        const majorAmplitude1 = 60 + Math.random() * 40; // Entre 60 et 100
+        const majorAmplitude2 = 40 + Math.random() * 40; // Entre 40 et 80
+        
+        const mediumFreq1 = 1.5 + Math.random() * 1.0;  // Entre 1.5 et 2.5
+        const mediumFreq2 = 1.0 + Math.random() * 1.0;  // Entre 1.0 et 2.0
+        const mediumAmplitude1 = 20 + Math.random() * 20; // Entre 20 et 40
+        const mediumAmplitude2 = 15 + Math.random() * 20; // Entre 15 et 35
+        
+        const smallFreq1 = 6 + Math.random() * 4;       // Entre 6 et 10
+        const smallFreq2 = 4 + Math.random() * 4;       // Entre 4 et 8
+        const smallAmplitude1 = 5 + Math.random() * 10; // Entre 5 et 15
+        const smallAmplitude2 = 3 + Math.random() * 10; // Entre 3 et 13
+        
+        // Variations supplémentaires pour plus de complexité
+        const extraFreq = 0.1 + Math.random() * 0.2;   // Très basse fréquence
+        const extraAmplitude = 20 + Math.random() * 30; // Amplitude significative
+        
+        console.log('🏁 Génération d\'un nouveau circuit aléatoire...');
         
         for (let i = 0; i < numPoints; i++) {
             const angle = (i / numPoints) * Math.PI * 2;
             
-            // Variations complexes pour créer un circuit intéressant
-            const majorVariation = Math.sin(angle * 0.5) * 80 + Math.cos(angle * 0.3) * 60;
-            const mediumVariation = Math.sin(angle * 2) * 30 + Math.cos(angle * 1.5) * 25;
-            const smallVariation = Math.sin(angle * 8) * 10 + Math.cos(angle * 6) * 8;
+            // Variations complexes avec paramètres aléatoires
+            const majorVariation = Math.sin(angle * majorFreq1 + randomSeed) * majorAmplitude1 + 
+                                  Math.cos(angle * majorFreq2 + randomSeed * 0.7) * majorAmplitude2;
             
-            const totalRadius = baseRadius + majorVariation + mediumVariation + smallVariation;
+            const mediumVariation = Math.sin(angle * mediumFreq1 + randomSeed * 1.3) * mediumAmplitude1 + 
+                                   Math.cos(angle * mediumFreq2 + randomSeed * 1.7) * mediumAmplitude2;
             
-            const x = Math.cos(angle) * totalRadius;
-            const z = Math.sin(angle) * totalRadius;
+            const smallVariation = Math.sin(angle * smallFreq1 + randomSeed * 2.1) * smallAmplitude1 + 
+                                  Math.cos(angle * smallFreq2 + randomSeed * 2.9) * smallAmplitude2;
+            
+            // Variation extra pour des formes plus organiques
+            const extraVariation = Math.sin(angle * extraFreq + randomSeed * 0.5) * extraAmplitude;
+            
+            const totalRadius = baseRadius + majorVariation + mediumVariation + smallVariation + extraVariation;
+            
+            // S'assurer que le rayon reste dans des limites raisonnables
+            const clampedRadius = Math.max(80, Math.min(300, totalRadius));
+            
+            const x = Math.cos(angle) * clampedRadius;
+            const z = Math.sin(angle) * clampedRadius;
             const y = 0;
             
             this.trackPoints.push(new THREE.Vector3(x, y, z));
         }
+        
+        // Lisser le circuit pour éviter les angles trop brusques
+        this.smoothTrack();
     }
     
     createTrackGeometry() {
@@ -253,35 +289,49 @@ class Track {
       getTerrainHeight(x, z) {
         // Pour un terrain plat, retourner 0
         return 0;
-    }
-      generateTrees() {
-        const numTrees = 200; // Nombre d'arbres à générer
-        const minDistanceFromTrack = 20; // Distance minimale de la piste
-        const maxDistanceFromTrack = 150; // Distance maximale de la piste
-        const terrainSize = 400; // Taille de la zone où placer les arbres
-        const minDistanceBetweenTrees = 8; // Distance minimale entre les arbres
+    }      generateTrees() {
+        // Paramètres aléatoires pour la génération d'arbres
+        const baseNumTrees = 150 + Math.floor(Math.random() * 100); // Entre 150 et 250 arbres
+        const minDistanceFromTrack = 18 + Math.random() * 8; // Distance minimale variable
+        const maxDistanceFromTrack = 120 + Math.random() * 60; // Distance maximale variable
+        const terrainSize = 400; 
+        const minDistanceBetweenTrees = 6 + Math.random() * 4; // Espacement variable
+        
+        console.log(`🌳 Génération de ${baseNumTrees} arbres avec espacement aléatoire...`);
+        
+        // Densité variable selon les zones
+        const zoneDensities = [
+            { probability: 0.8, multiplier: 1.2 }, // Zone dense
+            { probability: 0.5, multiplier: 0.8 }, // Zone clairsemée
+            { probability: 0.3, multiplier: 0.6 }  // Zone très clairsemée
+        ];
+        
+        // Choisir une densité aléatoire pour cette génération
+        const selectedDensity = zoneDensities[Math.floor(Math.random() * zoneDensities.length)];
+        const actualNumTrees = Math.floor(baseNumTrees * selectedDensity.multiplier);
+        const treePlacementProbability = selectedDensity.probability;
         
         // Utiliser un algorithme de placement par grille avec variation aléatoire
-        const gridSize = Math.sqrt(numTrees); // Approximation pour une grille carrée
+        const gridSize = Math.ceil(Math.sqrt(actualNumTrees));
         const cellSize = terrainSize / gridSize;
         
         for (let gridX = 0; gridX < gridSize; gridX++) {
             for (let gridZ = 0; gridZ < gridSize; gridZ++) {
-                // Probabilité de placer un arbre dans cette cellule (permet des variations)
-                if (Math.random() > 0.7) continue; // 30% de chance de placer un arbre
+                // Probabilité variable de placer un arbre dans cette cellule
+                if (Math.random() > treePlacementProbability) continue;
                 
                 let position;
                 let validPosition = false;
                 let attempts = 0;
                 
                 // Essayer de trouver une position valide dans cette cellule de grille
-                while (!validPosition && attempts < 20) {
-                    // Position de base de la cellule avec variation aléatoire
+                while (!validPosition && attempts < 25) {
+                    // Position de base de la cellule avec variation aléatoire plus importante
                     const baseCellX = (gridX - gridSize/2 + 0.5) * cellSize;
                     const baseCellZ = (gridZ - gridSize/2 + 0.5) * cellSize;
                     
-                    // Ajouter une variation aléatoire dans la cellule
-                    const variation = cellSize * 0.8; // 80% de la taille de cellule pour la variation
+                    // Variation aléatoire plus importante pour des patterns moins réguliers
+                    const variation = cellSize * (0.7 + Math.random() * 0.6); // Entre 70% et 130%
                     position = new THREE.Vector3(
                         baseCellX + (Math.random() - 0.5) * variation,
                         0,
@@ -294,9 +344,10 @@ class Track {
                         continue;
                     }
                     
-                    // Vérifier la distance avec tous les points de la piste
+                    // Vérifier la distance avec tous les points de la piste (sampling variable)
                     validPosition = true;
-                    for (let j = 0; j < this.trackPoints.length; j += 10) { // Vérifier tous les 10 points pour optimiser
+                    const sampleStep = 8 + Math.floor(Math.random() * 6); // Entre 8 et 14 points
+                    for (let j = 0; j < this.trackPoints.length; j += sampleStep) {
                         const distanceToTrack = position.distanceTo(this.trackPoints[j]);
                         if (distanceToTrack < minDistanceFromTrack) {
                             validPosition = false;
@@ -304,8 +355,9 @@ class Track {
                         }
                     }
                     
-                    // Vérifier que l'arbre n'est pas trop loin du centre
-                    if (validPosition && position.length() > maxDistanceFromTrack) {
+                    // Vérifier que l'arbre n'est pas trop loin du centre (limite variable)
+                    const maxCenterDistance = maxDistanceFromTrack + Math.random() * 20;
+                    if (validPosition && position.length() > maxCenterDistance) {
                         validPosition = false;
                     }
                     
@@ -330,28 +382,60 @@ class Track {
             }
         }
         
-        // Ajouter quelques arbres supplémentaires pour remplir les zones vides
+        // Ajouter quelques arbres supplémentaires dans des zones aléatoires
         this.fillEmptyAreas(minDistanceFromTrack, maxDistanceFromTrack, terrainSize, minDistanceBetweenTrees);
+        
+        console.log(`🌲 ${this.trees.length} arbres générés avec un placement aléatoire`);
     }
-    
-    fillEmptyAreas(minDistanceFromTrack, maxDistanceFromTrack, terrainSize, minDistanceBetweenTrees) {
-        const additionalTrees = 50; // Nombre d'arbres supplémentaires à essayer de placer
+      fillEmptyAreas(minDistanceFromTrack, maxDistanceFromTrack, terrainSize, minDistanceBetweenTrees) {
+        // Nombre variable d'arbres supplémentaires
+        const additionalTrees = 30 + Math.floor(Math.random() * 40); // Entre 30 et 70 arbres
+        
+        console.log(`🌿 Ajout de ${additionalTrees} arbres supplémentaires dans les zones vides...`);
         
         for (let i = 0; i < additionalTrees; i++) {
             let position;
             let validPosition = false;
             let attempts = 0;
             
-            while (!validPosition && attempts < 30) {
-                // Placement aléatoire dans une zone circulaire autour du centre
-                const angle = Math.random() * Math.PI * 2;
-                const radius = minDistanceFromTrack + Math.random() * (maxDistanceFromTrack - minDistanceFromTrack);
+            while (!validPosition && attempts < 35) {
+                // Placement aléatoire avec différentes stratégies
+                const strategy = Math.random();
                 
-                position = new THREE.Vector3(
-                    Math.cos(angle) * radius,
-                    0,
-                    Math.sin(angle) * radius
-                );
+                if (strategy < 0.6) {
+                    // Stratégie 1: Placement circulaire autour du centre (60%)
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = minDistanceFromTrack + Math.random() * (maxDistanceFromTrack - minDistanceFromTrack);
+                    
+                    position = new THREE.Vector3(
+                        Math.cos(angle) * radius,
+                        0,
+                        Math.sin(angle) * radius
+                    );
+                } else if (strategy < 0.85) {
+                    // Stratégie 2: Placement en clusters (25%)
+                    const clusterCenter = new THREE.Vector3(
+                        (Math.random() - 0.5) * terrainSize * 0.8,
+                        0,
+                        (Math.random() - 0.5) * terrainSize * 0.8
+                    );
+                    
+                    const clusterRadius = 15 + Math.random() * 25;
+                    const clusterAngle = Math.random() * Math.PI * 2;
+                    
+                    position = new THREE.Vector3(
+                        clusterCenter.x + Math.cos(clusterAngle) * clusterRadius,
+                        0,
+                        clusterCenter.z + Math.sin(clusterAngle) * clusterRadius
+                    );
+                } else {
+                    // Stratégie 3: Placement complètement aléatoire (15%)
+                    position = new THREE.Vector3(
+                        (Math.random() - 0.5) * terrainSize,
+                        0,
+                        (Math.random() - 0.5) * terrainSize
+                    );
+                }
                 
                 // Vérifier que la position est dans les limites du terrain
                 if (Math.abs(position.x) > terrainSize/2 || Math.abs(position.z) > terrainSize/2) {
@@ -359,9 +443,10 @@ class Track {
                     continue;
                 }
                 
-                // Vérifier la distance avec la piste
+                // Vérifier la distance avec la piste (sampling aléatoire)
                 validPosition = true;
-                for (let j = 0; j < this.trackPoints.length; j += 15) {
+                const sampleStep = 12 + Math.floor(Math.random() * 8); // Entre 12 et 20
+                for (let j = 0; j < this.trackPoints.length; j += sampleStep) {
                     const distanceToTrack = position.distanceTo(this.trackPoints[j]);
                     if (distanceToTrack < minDistanceFromTrack) {
                         validPosition = false;
@@ -369,11 +454,12 @@ class Track {
                     }
                 }
                 
-                // Vérifier la distance avec les autres arbres
+                // Vérifier la distance avec les autres arbres (distance variable)
                 if (validPosition) {
+                    const dynamicMinDistance = minDistanceBetweenTrees * (0.7 + Math.random() * 0.6); // ±30%
                     for (let existingTree of this.trees) {
                         const distanceToTree = position.distanceTo(existingTree.position);
-                        if (distanceToTree < minDistanceBetweenTrees) {
+                        if (distanceToTree < dynamicMinDistance) {
                             validPosition = false;
                             break;
                         }
@@ -512,4 +598,49 @@ class Track {
     getTrackPoints() { return this.trackPoints; }
     getBarriers() { return this.barriers; }
     getTrees() { return this.trees; }
+    
+    smoothTrack() {
+        // Lissage du circuit pour éviter les changements de direction trop brusques
+        const smoothingPasses = 2;
+        const smoothingFactor = 0.1;
+        
+        for (let pass = 0; pass < smoothingPasses; pass++) {
+            const smoothedPoints = [];
+            
+            for (let i = 0; i < this.trackPoints.length; i++) {
+                const current = this.trackPoints[i];
+                const prev = this.trackPoints[(i - 1 + this.trackPoints.length) % this.trackPoints.length];
+                const next = this.trackPoints[(i + 1) % this.trackPoints.length];
+                
+                // Calculer la moyenne pondérée
+                const smoothed = new THREE.Vector3(
+                    current.x * (1 - smoothingFactor) + (prev.x + next.x) * smoothingFactor * 0.5,
+                    current.y,
+                    current.z * (1 - smoothingFactor) + (prev.z + next.z) * smoothingFactor * 0.5
+                );
+                
+                smoothedPoints.push(smoothed);
+            }
+            
+            this.trackPoints = smoothedPoints;
+        }
+        
+        console.log('✨ Circuit lissé pour une meilleure cohérence');
+    }
+      // Méthode pour régénérer un nouveau circuit
+    async regenerateTrack() {
+        console.log('🔄 Régénération du circuit...');
+        
+        // Nettoyer les anciens éléments
+        this.trackPoints = [];
+        this.trees = [];
+        
+        // Régénérer tous les éléments
+        this.generateTrackPoints();
+        this.createTrackGeometry();
+        this.generateTrees();
+        this.createStartLine();
+        
+        console.log('✅ Nouveau circuit généré !');
+    }
 }

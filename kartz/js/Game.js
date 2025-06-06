@@ -227,6 +227,81 @@ class Game {
         console.log('Jeu repris');
     }
 
+    // Méthode pour régénérer le circuit (appelée par l'UI)
+    async onTrackRegenerated() {
+        console.log('🔄 Circuit régénéré, mise à jour de la scène...');
+        
+        // Supprimer l'ancien circuit de la scène
+        if (this.track) {
+            // Supprimer tous les éléments du track de la scène
+            if (this.track.trackMesh) this.scene.remove(this.track.trackMesh);
+            if (this.track.terrainMesh) this.scene.remove(this.track.terrainMesh);
+            if (this.track.baseMesh) this.scene.remove(this.track.baseMesh);
+            if (this.track.startLine) this.scene.remove(this.track.startLine);
+            
+            // Supprimer les drapeaux
+            if (this.track.flags) {
+                this.track.flags.forEach(flag => this.scene.remove(flag));
+            }
+            
+            // Supprimer les arbres
+            this.track.trees.forEach(tree => {
+                this.scene.remove(tree.group);
+            });
+        }
+        
+        // Ajouter le nouveau circuit à la scène
+        this.track.addToScene(this.scene);
+        
+        // Repositionner les karts aux nouvelles positions de départ
+        if (this.playerKart) {
+            this.playerKart.setPosition(this.track.getStartPosition(0));
+            this.playerKart.rotation = 0;
+            this.playerKart.velocity.set(0, 0, 0);
+            this.playerKart.speed = 0;
+        }
+        
+        this.aiKarts.forEach((aiKart, index) => {
+            aiKart.setPosition(this.track.getStartPosition(index + 1));
+            aiKart.rotation = 0;
+            aiKart.velocity.set(0, 0, 0);
+            aiKart.speed = 0;
+        });
+        
+        // Remettre à zéro les compteurs de tours
+        this.playerLaps = 0;
+        this.aiLaps = [0, 0, 0];
+        
+        // Remettre à zéro la progression sur le circuit
+        if (this.playerKart) {
+            this.playerKart.trackProgress = 0;
+            this.playerKart.lastCheckpoint = 0;
+        }
+        this.aiKarts.forEach(kart => {
+            kart.trackProgress = 0;
+            kart.lastCheckpoint = 0;
+        });
+        
+        // Mettre à jour la minimap
+        if (this.uiManager) {
+            this.uiManager.drawMinimapTrack();
+        }
+        
+        // Jouer un effet sonore
+        if (this.audioManager) {
+            this.audioManager.playEffect('start');
+        }
+        
+        console.log('✅ Nouveau circuit intégré dans le jeu !');
+    }
+      // Méthode publique pour régénérer le circuit (appelée par l'UI)
+    async regenerateTrack() {
+        if (this.track) {
+            await this.track.regenerateTrack();
+            await this.onTrackRegenerated();
+        }
+    }
+
     animate() {
         requestAnimationFrame(() => this.animate());
 

@@ -25,6 +25,7 @@ Ce projet présente un jeu de karting 3D complet avec :
 - **Feux de circulation** avec séquence de départ authentique
 - **Interface utilisateur** avec vitesse, position et progression
 - **Minimap interactive** affichant la position des karts sur le circuit
+- **🔄 Génération aléatoire de circuit** : Nouveau circuit à chaque partie ou sur demande
 
 ### 🎵 Système Audio
 - **Musique de fond** : Sélection aléatoire parmi 8 pistes musicales
@@ -182,6 +183,47 @@ class UIManager {
 - `startRaceSequence()` : Séquence de départ avec feux (Game.js)
 - `applyPhysics()` : Physique libre sans collisions (Kart.js)
 - `updateRain()` : Système de particules de pluie (RainManager.js)
+
+## 🔄 Génération Aléatoire de Circuit
+
+### Fonctionnalités
+Le jeu propose désormais un système de génération aléatoire de circuit qui remplace les formules mathématiques fixes par des paramètres variables :
+
+#### 🎲 Paramètres Aléatoires
+- **Fréquences variables** : Entre 0.3-0.7 pour les variations majeures
+- **Amplitudes dynamiques** : Entre 60-100 pour les courbes principales
+- **Seed aléatoire** : Garantit l'unicité de chaque circuit
+- **Variations organiques** : Combinaison de plusieurs couches de déformation
+
+#### 🌿 Génération d'Arbres Intelligente
+- **Nombre variable** : Entre 150-250 arbres par circuit
+- **Stratégies de placement** :
+  - 60% : Placement circulaire autour du centre
+  - 25% : Clusters d'arbres dans des zones
+  - 15% : Placement complètement aléatoire
+- **Densités de zones** : 3 niveaux de densité différents
+
+#### 🎮 Utilisation
+- **Au démarrage** : Chaque nouvelle partie génère un circuit unique
+- **En jeu** : Utilisez le bouton "🔄 Nouveau Circuit" dans le menu pause (Échap)
+- **Repositionnement automatique** : Les karts sont replacés aux nouvelles positions de départ
+- **Minimap mise à jour** : La carte se met à jour automatiquement
+
+### Code de Génération
+```javascript
+// Dans js/Track.js - generateTrackPoints()
+const randomSeed = Math.random() * 1000;
+const majorFreq1 = 0.3 + Math.random() * 0.4;
+const majorAmplitude1 = 60 + Math.random() * 40;
+
+// Méthode de régénération
+async regenerateTrack() {
+    this.generateTrackPoints();
+    this.createTrackGeometry();
+    this.generateTrees();
+    this.createStartLine();
+}
+```
 
 ## 🎨 Personnalisation
 

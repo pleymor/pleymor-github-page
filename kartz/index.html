@@ -158,13 +158,17 @@
 
         #pauseMenu button:hover::before {
             left: 100%;
-        }
-
-        #pauseMenu button:hover {
+        }        #pauseMenu button:hover {
             background: rgba(255, 255, 255, 0.2);
             border-color: var(--neon-blue);
             box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
             transform: translateY(-1px);
+        }
+
+        #pauseMenu button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
         }
 
         .volume-control {
@@ -1023,12 +1027,11 @@
         </div>
 
         <!-- Bouton pause -->
-        <div id="pauseButton">⏸️</div>
-
-        <!-- Menu pause -->
+        <div id="pauseButton">⏸️</div>        <!-- Menu pause -->
         <div id="pauseMenu">
             <h2>🏁 PAUSE 🏁</h2>
             <button id="resumeButton">▶️ Reprendre</button>
+            <button id="regenerateTrackButton">🔄 Nouveau Circuit (R)</button>
             <button id="musicToggle">🎵 Musique ON</button>
             <button id="rainToggle">🌧️ Pluie OFF</button>
             <div class="volume-control">
@@ -1058,7 +1061,19 @@
             <button onclick="location.reload()" style="margin-top: 20px;">
                 🏁 NOUVELLE COURSE 🏁
             </button>
-        </div>        <div id="controls" style="display: none;">
+        </div>
+
+        <!-- Track Regeneration Loading Overlay -->
+        <div id="trackRegenOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column;">
+            <div style="text-align: center; color: white; font-family: 'Orbitron', monospace;">
+                <div style="font-size: 48px; margin-bottom: 20px;">🔄</div>
+                <div style="font-size: 24px; margin-bottom: 30px;">Génération du nouveau circuit...</div>
+                <div class="loading-spinner" style="width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid var(--neon-blue); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                <div style="margin-top: 20px; font-size: 16px; color: var(--glass-border);">Veuillez patienter...</div>
+            </div>
+        </div>
+
+        <div id="controls" style="display: none;">
             <div style="font-weight: 600; margin-bottom: 8px; color: var(--neon-blue);">🎮 CONTRÔLES DE JEU</div>
             ↑↓ Accélération/Frein • ←→ Direction • 🖱️ Molette pour Zoom • 🖱️ Clic+Glisser pour Rotation Caméra<br>
             <div style="margin-top: 10px;">
