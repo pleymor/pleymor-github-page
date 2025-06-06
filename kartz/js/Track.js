@@ -1,6 +1,5 @@
 // Track.js - Classe pour la piste et le terrain
-class Track {
-    constructor(game = null) {
+class Track {    constructor(game = null) {
         this.game = game;
         this.trackPoints = [];
         this.barriers = [];
@@ -10,6 +9,7 @@ class Track {
         this.checkpointMeshes = [];
         this.trackMesh = null;
         this.terrainMesh = null;
+        this.centerLine = null; // Ligne médiane pointillée blanche
         this.startLine = null; // Une seule ligne servant de départ ET d'arrivée
         this.finishLine = null; // Référence historique - identique à startLine
         this.shaderManager = new ShaderManager();
@@ -397,6 +397,90 @@ class Track {
         const trackMaterial = this.shaderManager.getTrackMaterial(this.wetness);
         this.trackMesh = new THREE.Mesh(trackGeometry, trackMaterial);
         this.trackMesh.receiveShadow = true;
+        
+        // Créer la ligne médiane en pointillés
+        this.createCenterLine();
+    }
+
+    createCenterLine() {
+        const centerLineGroup = new THREE.Group();
+        
+        // Paramètres pour les pointillés
+        const dashLength = 4;  // Longueur d'un tiret
+        const gapLength = 6;   // Longueur d'un espacement
+        const lineWidth = 0.4; // Largeur de la ligne
+        const segmentLength = dashLength + gapLength;
+        
+        // Calculer la longueur totale du circuit
+        let totalLength = 0;
+        for (let i = 0; i < this.trackPoints.length; i++) {
+            const current = this.trackPoints[i];
+            const next = this.trackPoints[(i + 1) % this.trackPoints.length];
+            totalLength += current.distanceTo(next);
+        }
+        
+        // Nombre de segments de pointillés
+        const numSegments = Math.floor(totalLength / segmentLength);
+        
+        for (let segmentIndex = 0; segmentIndex < numSegments; segmentIndex++) {
+            const segmentStart = segmentIndex * segmentLength;
+            const segmentEnd = segmentStart + dashLength;
+            
+            // Trouver les positions de début et fin du tiret
+            const startPos = this.getPositionAtDistance(segmentStart);
+            const endPos = this.getPositionAtDistance(segmentEnd);
+            
+            if (startPos && endPos) {
+                // Créer la géométrie du tiret
+                const dashGeometry = new THREE.PlaneGeometry(startPos.distanceTo(endPos), lineWidth);
+                const dashMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xffffff,
+                    transparent: true,
+                    opacity: 0.9
+                });
+                
+                const dash = new THREE.Mesh(dashGeometry, dashMaterial);
+                
+                // Positionner le tiret
+                const midPos = new THREE.Vector3().addVectors(startPos, endPos).multiplyScalar(0.5);
+                dash.position.copy(midPos);
+                dash.position.y = 0.01; // Légèrement au-dessus de la piste
+                dash.rotation.x = -Math.PI / 2;
+                
+                // Orienter le tiret selon la direction de la piste
+                const direction = new THREE.Vector3().subVectors(endPos, startPos);
+                const angle = Math.atan2(direction.z, direction.x);
+                dash.rotation.z = angle;
+                
+                centerLineGroup.add(dash);
+            }
+        }
+        
+        this.centerLine = centerLineGroup;
+        console.log(`✅ Ligne médiane créée avec ${centerLineGroup.children.length} pointillés`);
+    }
+
+    // Méthode utilitaire pour obtenir une position à une distance donnée le long du circuit
+    getPositionAtDistance(distance) {
+        let currentDistance = 0;
+        
+        for (let i = 0; i < this.trackPoints.length; i++) {
+            const current = this.trackPoints[i];
+            const next = this.trackPoints[(i + 1) % this.trackPoints.length];
+            const segmentLength = current.distanceTo(next);
+            
+            if (currentDistance + segmentLength >= distance) {
+                // La distance cible est dans ce segment
+                const remainingDistance = distance - currentDistance;
+                const t = remainingDistance / segmentLength;
+                
+                return new THREE.Vector3().lerpVectors(current, next, t);
+            }
+            
+            currentDistance += segmentLength;
+        }
+        
+        return null;
     }
     
     createTerrain() {
@@ -545,6 +629,9 @@ class Track {
         
         // Ajouter la ligne de départ/arrivée
         if (this.startLine) scene.add(this.startLine);
+        
+        // Ajouter la ligne médiane pointillée blanche
+        if (this.centerLine) scene.add(this.centerLine);
         
         // Ajouter les drapeaux
         if (this.flags) {
@@ -984,8 +1071,7 @@ class Track {
       // Get wetness level for other systems
     getWetness() {
         return this.wetness;
-    }
-      // Méthode pour régénérer un nouveau circuit
+    }      // Méthode pour régénérer un nouveau circuit
     async regenerateTrack() {
         console.log('🔄 Régénération du circuit...');
         
@@ -994,6 +1080,7 @@ class Track {
         this.trees = [];
         this.checkpoints = [];
         this.checkpointMeshes = [];
+        this.centerLine = null;
         
         // Régénérer tous les éléments
         this.generateTrackPoints();
