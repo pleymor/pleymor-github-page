@@ -25,6 +25,10 @@ class Kart {    constructor(color, isPlayer = false, game) {
         this.trackProgress = 0;
         this.lastCheckpoint = 0;
 
+        // Système anti-raccourcis avec checkpoints
+        this.passedCheckpoints = []; // Checkpoints validés pour le tour actuel
+        this.currentLapCheckpoints = new Set(); // Checkpoints uniques du tour en cours
+
         // Variables pour une physique plus réaliste
         this.angularVelocity = 0;
         this.lateralVelocity = new THREE.Vector3();
@@ -612,9 +616,7 @@ class Kart {    constructor(color, isPlayer = false, game) {
         const rotationEffect = Math.sign(collisionDirection.cross(new THREE.Vector3(0, 1, 0)).y) * 0.1;
         this.angularVelocity += rotationEffect;
         otherKart.angularVelocity -= rotationEffect;
-    }
-
-    checkLapProgress() {
+    }    checkLapProgress() {
         const track = this.game.getTrack();
         const trackPoints = track.getTrackPoints();
 
@@ -630,15 +632,54 @@ class Kart {    constructor(color, isPlayer = false, game) {
             }
         });
 
-        // Vérifier si on a franchi la ligne d'arrivée
+        // Vérifier le passage par les checkpoints anti-raccourcis (si ils existent)
+        if (track.checkpoints && track.checkpoints.length > 0) {
+            const newCheckpoints = track.checkCheckpointProgress(this.position, 2);
+            newCheckpoints.forEach(checkpointId => {
+                if (!this.currentLapCheckpoints.has(checkpointId)) {
+                    this.currentLapCheckpoints.add(checkpointId);
+                    this.passedCheckpoints.push(checkpointId);
+                    console.log(`✅ Checkpoint ${checkpointId} validé pour ${this.isPlayer ? 'joueur' : 'IA'} - Total: ${this.currentLapCheckpoints.size}/${track.checkpoints.length}`);
+                }
+            });
+        }
+
+        // Vérifier si on peut franchir la ligne d'arrivée
         if (closestIndex < 10 && this.lastCheckpoint > trackPoints.length - 10) {
-            this.laps++;
-            this.game.onLapCompleted(this);
+            let lapValidated = false;
+            
+            // Si checkpoints activés, les utiliser avec validation allégée
+            if (track.checkpoints && track.checkpoints.length > 0) {
+                console.log(`🏁 Tentative de passage ligne d'arrivée - Checkpoints validés: ${this.currentLapCheckpoints.size}/${track.checkpoints.length}`);
+                
+                // Validation allégée : au moins la moitié des checkpoints
+                const requiredCheckpoints = Math.ceil(track.checkpoints.length / 2);
+                
+                if (this.currentLapCheckpoints.size >= requiredCheckpoints) {
+                    lapValidated = true;
+                    console.log(`🏁 Tour validé avec ${this.currentLapCheckpoints.size} checkpoints !`);
+                } else {
+                    console.log(`🚫 Tour invalidé - seulement ${this.currentLapCheckpoints.size}/${requiredCheckpoints} checkpoints validés`);
+                }
+            } else {
+                // Fallback : validation classique sans checkpoints
+                lapValidated = true;
+                console.log(`🏁 Tour validé (mode classique - pas de checkpoints)`);
+            }
+            
+            if (lapValidated) {
+                this.laps++;
+                this.game.onLapCompleted(this);
+                
+                // Réinitialiser les checkpoints pour le prochain tour
+                this.currentLapCheckpoints.clear();
+                this.passedCheckpoints = [];
+            }
         }
 
         this.trackProgress = closestIndex;
         this.lastCheckpoint = closestIndex;
-    } updateTransform() {
+    }updateTransform() {
 
         this.group.position.copy(this.position);
         this.group.rotation.y = this.rotation;
