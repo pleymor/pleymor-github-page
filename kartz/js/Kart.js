@@ -1,8 +1,8 @@
 // Kart.js - Classe pour les véhicules
-class Kart {
-    constructor(color, isPlayer = false, game) {
+class Kart {    constructor(color, isPlayer = false, game) {
         this.isPlayer = isPlayer;
         this.game = game;
+        this.shaderManager = new ShaderManager();
 
         // Propriétés du kart
         this.maxSpeed = isPlayer ? 80 : 80; // Vitesse maximale en km/h
@@ -38,15 +38,9 @@ class Kart {
 
         this.createModel(color);
     } createModel(color) {
-        this.group = new THREE.Group();
-
-        // Châssis principal - forme plus réaliste
+        this.group = new THREE.Group();        // Châssis principal - forme plus réaliste
         const mainBodyGeometry = new THREE.BoxGeometry(1.4, 0.4, 2.2);
-        const bodyMaterial = new THREE.MeshPhongMaterial({
-            color: color,
-            shininess: 100,
-            specular: 0x444444
-        });
+        const bodyMaterial = this.shaderManager.getKartMaterial(color, 0.0);
         this.body = new THREE.Mesh(mainBodyGeometry, bodyMaterial);
         this.body.position.set(0, 0.3, 0);
         this.body.castShadow = true;
@@ -54,18 +48,13 @@ class Kart {
 
         // Cockpit (partie avant surélevée)
         const cockpitGeometry = new THREE.BoxGeometry(1.0, 0.3, 1.0);
-        const cockpitMaterial = new THREE.MeshPhongMaterial({
-            color: new THREE.Color(color).multiplyScalar(0.8),
-            shininess: 80
-        });
+        const cockpitMaterial = this.shaderManager.getKartMaterial(new THREE.Color(color).multiplyScalar(0.8), 0.0);
         const cockpit = new THREE.Mesh(cockpitGeometry, cockpitMaterial);
         cockpit.position.set(0, 0.65, 0.3);
         cockpit.castShadow = true;
-        this.group.add(cockpit);
-
-        // Siège du pilote
+        this.group.add(cockpit);        // Siège du pilote
         const seatGeometry = new THREE.BoxGeometry(0.6, 0.4, 0.8);
-        const seatMaterial = new THREE.MeshPhongMaterial({ color: 0x222222 });
+        const seatMaterial = this.shaderManager.getKartMaterial(new THREE.Color(0x222222), 0.0);
         const seat = new THREE.Mesh(seatGeometry, seatMaterial);
         seat.position.set(0, 0.7, 0.2);
         seat.castShadow = true;
@@ -80,7 +69,7 @@ class Kart {
 
         // Volant
         const steeringWheelGeometry = new THREE.TorusGeometry(0.15, 0.02, 8, 16);
-        const steeringWheelMaterial = new THREE.MeshPhongMaterial({ color: 0x111111 });
+        const steeringWheelMaterial = this.shaderManager.getKartMaterial(new THREE.Color(0x111111), 0.0);
         const steeringWheel = new THREE.Mesh(steeringWheelGeometry, steeringWheelMaterial);
         steeringWheel.position.set(0, 0.9, 0.4);
         steeringWheel.rotation.x = -Math.PI / 6;
@@ -97,10 +86,7 @@ class Kart {
 
         // Aileron arrière
         const rearWingGeometry = new THREE.BoxGeometry(1.6, 0.05, 0.3);
-        const rearWingMaterial = new THREE.MeshPhongMaterial({
-            color: new THREE.Color(color).multiplyScalar(0.7),
-            shininess: 120
-        });
+        const rearWingMaterial = this.shaderManager.getKartMaterial(new THREE.Color(color).multiplyScalar(0.7), 0.0);
         const rearWing = new THREE.Mesh(rearWingGeometry, rearWingMaterial);
         rearWing.position.set(0, 0.8, -1.2);
         rearWing.castShadow = true;
@@ -109,7 +95,8 @@ class Kart {
         // Supports de l'aileron
         for (let x of [-0.6, 0.6]) {
             const wingSupportGeometry = new THREE.CylinderGeometry(0.03, 0.03, 0.4, 6);
-            const wingSupport = new THREE.Mesh(wingSupportGeometry, new THREE.MeshPhongMaterial({ color: 0x444444 }));
+            const wingSupportMaterial = this.shaderManager.getKartMaterial(new THREE.Color(0x444444), 0.0);
+            const wingSupport = new THREE.Mesh(wingSupportGeometry, wingSupportMaterial);
             wingSupport.position.set(x, 0.6, -1.2);
             wingSupport.castShadow = true;
             this.group.add(wingSupport);
@@ -117,7 +104,7 @@ class Kart {
 
         // Pare-chocs avant
         const frontBumperGeometry = new THREE.BoxGeometry(1.3, 0.15, 0.2);
-        const bumperMaterial = new THREE.MeshPhongMaterial({ color: 0x666666, shininess: 50 });
+        const bumperMaterial = this.shaderManager.getKartMaterial(new THREE.Color(0x666666), 0.0);
         const frontBumper = new THREE.Mesh(frontBumperGeometry, bumperMaterial);
         frontBumper.position.set(0, 0.2, 1.2);
         frontBumper.castShadow = true;
@@ -136,26 +123,16 @@ class Kart {
             [-0.8, 0, -1], [0.8, 0, -1]  // Roues arrière
         ];
 
-        wheelPositions.forEach((pos, index) => {
-            // Pneu
+        wheelPositions.forEach((pos, index) => {            // Pneu
             const tireGeometry = new THREE.CylinderGeometry(0.35, 0.35, 0.25, 12);
-            const tireMaterial = new THREE.MeshPhongMaterial({
-                color: 0x222222,
-                shininess: 10
-            });
+            const tireMaterial = this.shaderManager.getKartMaterial(new THREE.Color(0x222222), 0.0);
             const tire = new THREE.Mesh(tireGeometry, tireMaterial);
             tire.position.set(pos[0], pos[1], pos[2]);
             tire.rotation.z = Math.PI / 2;
             tire.castShadow = true;
-            this.group.add(tire);
-
-            // Jante
+            this.group.add(tire);// Jante
             const rimGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.15, 8);
-            const rimMaterial = new THREE.MeshPhongMaterial({
-                color: 0xCCCCCC,
-                shininess: 100,
-                specular: 0xFFFFFF
-            });
+            const rimMaterial = this.shaderManager.getKartMaterial(new THREE.Color(0xCCCCCC), 0.0);
             const rim = new THREE.Mesh(rimGeometry, rimMaterial);
             rim.position.set(pos[0], pos[1], pos[2]);
             rim.rotation.z = Math.PI / 2;
@@ -184,11 +161,7 @@ class Kart {
         // Limiter les valeurs RGB entre 0 et 1
         brightColor.r = Math.min(brightColor.r, 1);
         brightColor.g = Math.min(brightColor.g, 1);
-        brightColor.b = Math.min(brightColor.b, 1);
-        const stripeMaterial = new THREE.MeshPhongMaterial({
-            color: brightColor,
-            shininess: 150
-        });
+        brightColor.b = Math.min(brightColor.b, 1);        const stripeMaterial = this.shaderManager.getKartMaterial(brightColor, 0.0);
 
         // Bande sur le côté
         for (let side of [-1, 1]) {
@@ -202,7 +175,7 @@ class Kart {
         // Numéro sur le kart (pour différencier les karts)
         if (!this.isPlayer) {
             const numberGeometry = new THREE.BoxGeometry(0.3, 0.3, 0.02);
-            const numberMaterial = new THREE.MeshPhongMaterial({ color: 0xFFFFFF });
+            const numberMaterial = this.shaderManager.getKartMaterial(new THREE.Color(0xFFFFFF), 0.0);
             const numberPlate = new THREE.Mesh(numberGeometry, numberMaterial);
             numberPlate.position.set(0, 0.6, 1.1);
             numberPlate.castShadow = true;
@@ -210,11 +183,7 @@ class Kart {
         }
 
         // Échappement
-        const exhaustGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.4, 8);
-        const exhaustMaterial = new THREE.MeshPhongMaterial({
-            color: 0x444444,
-            shininess: 80
-        });
+        const exhaustGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.4, 8);        const exhaustMaterial = this.shaderManager.getKartMaterial(new THREE.Color(0x444444), 0.0);
         const exhaust = new THREE.Mesh(exhaustGeometry, exhaustMaterial);
         exhaust.position.set(-0.4, 0.3, -1.1);
         exhaust.rotation.x = Math.PI / 2;
@@ -248,19 +217,8 @@ class Kart {
         particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         particles.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
         particles.setAttribute('age', new THREE.BufferAttribute(ages, 1));
-        particles.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-
-        // Matériau des particules amélioré
-        const particleMaterial = new THREE.PointsMaterial({
-            color: 0xAAAAAA,
-            size: 1.2,
-            transparent: true,
-            opacity: 0.8,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending,
-            sizeAttenuation: true,
-            alphaTest: 0.01
-        });
+        particles.setAttribute('size', new THREE.BufferAttribute(sizes, 1));        // Matériau des particules amélioré
+        const particleMaterial = this.shaderManager.getParticleMaterial();
 
         this.driftEffects = new THREE.Points(particles, particleMaterial);
         this.driftEffects.visible = false;
@@ -318,11 +276,26 @@ class Kart {
                 oldPos: `(${oldPosition.x.toFixed(2)}, ${oldPosition.z.toFixed(2)})`,
                 newPos: `(${newPosition.x.toFixed(2)}, ${newPosition.z.toFixed(2)})`
             });
-        }
-
-        this.updateTransform();
+        }        this.updateTransform();
         this.updateDriftEffects();
+        this.updateShaders();
         this.checkLapProgress();
+    }    updateShaders() {
+        // Update kart materials based on current speed
+        const speedNormalized = Math.abs(this.speed) / this.maxSpeed;
+        
+        // Update materials with speed-based effects by recreating them
+        if (this.shaderManager) {
+            // Update main body material
+            if (this.body && this.body.material) {
+                this.body.material = this.shaderManager.getKartMaterial(0xff4444, speedNormalized);
+            }
+            
+            // Update other major components for performance (optional - can be expanded)
+            if (this.cockpit && this.cockpit.material) {
+                this.cockpit.material = this.shaderManager.getKartMaterial(0x222222, speedNormalized);
+            }
+        }
     }
 
     // Accélération progressive avec courbe non-linéaire

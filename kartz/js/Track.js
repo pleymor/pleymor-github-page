@@ -9,7 +9,9 @@ class Track {
         this.terrainMesh = null;
         this.startLine = null;
         this.finishLine = null;
-    }    async create() {
+        this.shaderManager = new ShaderManager();
+        this.wetness = 0.0; // Track wetness for rain effects
+    }async create() {
         this.generateTrackPoints();
         this.createTrackGeometry();
         this.createTerrain();
@@ -104,33 +106,30 @@ class Track {
             indices.push(base, nextBase, base + 1);
             indices.push(base + 1, nextBase, nextBase + 1);
         }
-        
-        trackGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+          trackGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
         trackGeometry.setIndex(indices);
         trackGeometry.computeVertexNormals();
         
-        const trackMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+        // Use enhanced shader material for track
+        const trackMaterial = this.shaderManager.getTrackMaterial(this.wetness);
         this.trackMesh = new THREE.Mesh(trackGeometry, trackMaterial);
         this.trackMesh.receiveShadow = true;
-    }
-      createTerrain() {
+    }      createTerrain() {
         const terrainSize = 800;
         const segments = 100;
         const terrainGeometry = new THREE.PlaneGeometry(terrainSize, terrainSize, segments, segments);
         
-        const terrainMaterial = new THREE.MeshLambertMaterial({ 
-            color: 0x228B22,
-            transparent: false
-        });
+        // Use enhanced terrain shader
+        const terrainMaterial = this.shaderManager.getTerrainMaterial();
         
         this.terrainMesh = new THREE.Mesh(terrainGeometry, terrainMaterial);
         this.terrainMesh.rotation.x = -Math.PI / 2;
         this.terrainMesh.position.y = -0.1;
         this.terrainMesh.receiveShadow = true;
         
-        // Plan de base plus grand
+        // Plan de base plus grand with enhanced materials
         const baseGeometry = new THREE.PlaneGeometry(1200, 1200);
-        const baseMaterial = new THREE.MeshLambertMaterial({ color: 0x90EE90 });
+        const baseMaterial = this.shaderManager.getTerrainMaterial();
         this.baseMesh = new THREE.Mesh(baseGeometry, baseMaterial);
         this.baseMesh.rotation.x = -Math.PI / 2;
         this.baseMesh.position.y = -0.2;
@@ -593,11 +592,35 @@ class Track {
                 }
             });
         }
-    }
-      // Getters
+    }    // Getters
     getTrackPoints() { return this.trackPoints; }
     getBarriers() { return this.barriers; }
     getTrees() { return this.trees; }
+    
+    // Update shader effects
+    updateShaders(time, camera, rainEnabled = false) {
+        if (this.shaderManager) {
+            // Update wetness based on rain
+            if (rainEnabled) {
+                this.wetness = Math.min(1.0, this.wetness + 0.01);
+            } else {
+                this.wetness = Math.max(0.0, this.wetness - 0.005);
+            }
+            
+            // Update track material wetness
+            if (this.trackMesh && this.trackMesh.material.uniforms) {
+                this.trackMesh.material.uniforms.wetness.value = this.wetness;
+            }
+            
+            // Update all shader uniforms
+            this.shaderManager.updateUniforms(time, camera);
+        }
+    }
+    
+    // Get wetness level for other systems
+    getWetness() {
+        return this.wetness;
+    }
     
     smoothTrack() {
         // Lissage du circuit pour éviter les changements de direction trop brusques

@@ -5,11 +5,11 @@ class Game {
         this.camera = null;
         this.renderer = null;
         this.playerKart = null;
-        this.aiKarts = [];
-        this.track = null;        this.audioManager = null;
+        this.aiKarts = [];        this.track = null;        this.audioManager = null;
         this.uiManager = null;
         this.inputManager = null;
         this.rainManager = null;
+        this.shaderManager = null;
 
         this.gameStarted = false;
         this.raceFinished = false;
@@ -25,6 +25,7 @@ class Game {
     async init() {
         this.setupScene();
         this.setupLighting();        // Initialiser les managers
+        this.shaderManager = new ShaderManager();
         this.audioManager = new AudioManager(this);
         this.uiManager = new UIManager(this);
         this.inputManager = new InputManager(this);
@@ -128,11 +129,27 @@ class Game {
         this.updateCamera();
 
         // Mettre à jour l'interface
-        this.uiManager.updateGameStats(this.playerKart);
-
-        // Mettre à jour les effets de pluie
+        this.uiManager.updateGameStats(this.playerKart);        // Mettre à jour les effets de pluie
         this.rainManager.update();
-    }    updateCamera() {
+          // Update shader uniforms
+        this.updateShaders();
+    }
+
+    updateShaders() {
+        if (!this.shaderManager) return;
+        
+        const time = Date.now() * 0.001; // Current time in seconds
+        const cameraPosition = this.camera.position;
+        const isRaining = this.rainManager && this.rainManager.isRaining;
+        
+        // Update global shader uniforms
+        this.shaderManager.updateUniforms(time, cameraPosition, isRaining);
+        
+        // Update track shader uniforms
+        if (this.track) {
+            this.track.updateShaders();
+        }
+    }updateCamera() {
         if (!this.playerKart) return;
 
         const kartPos = this.playerKart.getPosition();
