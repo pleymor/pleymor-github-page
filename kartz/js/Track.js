@@ -783,31 +783,98 @@ class Track {    constructor(game = null) {
         
         console.log(`✅ ${numCheckpoints} checkpoints générés pour empêcher les raccourcis`);
     }    createCheckpointVisual(checkpoint) {
-        // Créer un portique visible pour debug
-        const portalGeometry = new THREE.PlaneGeometry(40, 15);
-        const portalMaterial = new THREE.MeshBasicMaterial({
-            color: 0x00ff00,
-            transparent: true,
-            opacity: 0.3, // Visible pour debug
-            side: THREE.DoubleSide
+        // Portique de course : deux poteaux de part et d'autre de la piste, une
+        // poutre au-dessus et une banderole numérotée face aux karts. Le tout
+        // s'illumine en vert au passage.
+        const group = new THREE.Group();
+
+        const trackHalf = 18;              // demi-largeur de piste
+        const postOffset = trackHalf + 2;  // poteaux juste à l'extérieur des bords
+        const postHeight = 13;
+        const postRadius = 0.6;
+
+        const postMaterial = new THREE.MeshLambertMaterial({ color: 0x4a4a55 });
+        const beamMaterial = new THREE.MeshLambertMaterial({ color: 0xcc2222 });
+
+        // Deux poteaux verticaux (le long de l'axe X local = en travers de la piste).
+        for (const side of [-1, 1]) {
+            const post = new THREE.Mesh(
+                new THREE.CylinderGeometry(postRadius, postRadius, postHeight, 10),
+                postMaterial
+            );
+            post.position.set(side * postOffset, postHeight / 2, 0);
+            post.castShadow = true;
+            post.userData.glow = true;
+            group.add(post);
+        }
+
+        // Poutre supérieure reliant les poteaux.
+        const beam = new THREE.Mesh(
+            new THREE.BoxGeometry(postOffset * 2 + 2, 1.4, 1.4),
+            beamMaterial
+        );
+        beam.position.set(0, postHeight, 0);
+        beam.castShadow = true;
+        beam.userData.glow = true;
+        group.add(beam);
+
+        // Banderole numérotée, face à la piste (plan dans le plan XY local).
+        const banner = new THREE.Mesh(
+            new THREE.PlaneGeometry(18, 5),
+            new THREE.MeshLambertMaterial({
+                map: this.createCheckpointNumberTexture(checkpoint.id + 1),
+                transparent: true,
+                side: THREE.DoubleSide
+            })
+        );
+        banner.position.set(0, postHeight - 3.2, 0);
+        banner.userData.glow = true;
+        group.add(banner);
+
+        // Placement + orientation : la barrière traverse la route. On aligne
+        // l'axe X local sur la perpendiculaire à la piste (rotation.y), avec le
+        // -perpendicular.z dû à la convention de rotation Y.
+        group.position.copy(checkpoint.position);
+        group.position.y = 0;
+        group.rotation.y = Math.atan2(-checkpoint.perpendicular.z, checkpoint.perpendicular.x);
+
+        group.userData = { isCheckpoint: true, checkpointId: checkpoint.id, lit: false };
+
+        this.checkpointMeshes.push(group);
+    }
+
+    // Texture de banderole : numéro blanc sur fond rouge.
+    createCheckpointNumberTexture(num) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 72;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#cc2222';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = 'bold 26px Arial';
+        ctx.fillText('CHECKPOINT', canvas.width / 2, 22);
+        ctx.font = 'bold 36px Arial';
+        ctx.fillText(String(num), canvas.width / 2, 50);
+
+        return new THREE.CanvasTexture(canvas);
+    }
+
+    // Allume/éteint l'illumination verte d'un portique de checkpoint.
+    setCheckpointGlow(group, on) {
+        const color = on ? 0x00aa00 : 0x000000;
+        group.traverse(obj => {
+            if (obj.material && obj.userData.glow) {
+                obj.material.emissive.setHex(color);
+            }
         });
-        
-        const portalMesh = new THREE.Mesh(portalGeometry, portalMaterial);
-        portalMesh.position.copy(checkpoint.position);
-        portalMesh.position.y = 7.5; // Hauteur du portique
-        portalMesh.rotation.x = -Math.PI / 2;
-        
-        // Orienter selon la direction de la piste
-        const angle = Math.atan2(checkpoint.direction.z, checkpoint.direction.x);
-        portalMesh.rotation.z = angle;
-        
-        // Marquer ce mesh comme checkpoint
-        portalMesh.userData = {
-            isCheckpoint: true,
-            checkpointId: checkpoint.id
-        };
-        
-        this.checkpointMeshes.push(portalMesh);
     }    // Valider le passage par un checkpoint
     checkCheckpointProgress(kartPosition, kartRadius = 2) {
         const validatedCheckpoints = [];
@@ -823,12 +890,14 @@ class Track {    constructor(game = null) {
             if (distance < checkpoint.radius) {
                 validatedCheckpoints.push(checkpoint.id);
                 
-                // Animation temporaire du checkpoint (pour debug)
-                const mesh = this.checkpointMeshes[checkpoint.id];
-                if (mesh && mesh.material.opacity < 0.5) {
-                    mesh.material.opacity = 0.8;
+                // Illuminer le portique brièvement au passage.
+                const group = this.checkpointMeshes[checkpoint.id];
+                if (group && !group.userData.lit) {
+                    group.userData.lit = true;
+                    this.setCheckpointGlow(group, true);
                     setTimeout(() => {
-                        mesh.material.opacity = 0.3;
+                        this.setCheckpointGlow(group, false);
+                        group.userData.lit = false;
                     }, 1000);
                 }
             }
