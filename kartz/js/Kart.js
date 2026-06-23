@@ -42,157 +42,169 @@ class Kart {    constructor(color, isPlayer = false, game) {
 
         this.createModel(color);
     } createModel(color) {
-        this.group = new THREE.Group();        // Châssis principal - forme plus réaliste
-        const mainBodyGeometry = new THREE.BoxGeometry(1.4, 0.4, 2.2);
-        const bodyMaterial = this.shaderManager.getKartMaterial(color, 0.0);
-        this.body = new THREE.Mesh(mainBodyGeometry, bodyMaterial);
-        this.body.position.set(0, 0.3, 0);
+        this.group = new THREE.Group();
+
+        const kartColor = new THREE.Color(color);
+        const darkColor = kartColor.clone().multiplyScalar(0.65);
+        const mat = (c) => this.shaderManager.getKartMaterial(c, 0.0);
+
+        // === Plancher (châssis bas) ===
+        const floor = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 2.7), mat(new THREE.Color(0x2a2a30)));
+        floor.position.set(0, -0.2, 0);
+        floor.castShadow = true;
+        floor.receiveShadow = true;
+        this.group.add(floor);
+
+        // === Carrosserie principale (référencée pour l'effet de vitesse) ===
+        this.body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.34, 1.7), mat(kartColor));
+        this.body.position.set(0, 0.02, -0.05);
         this.body.castShadow = true;
         this.group.add(this.body);
 
-        // Cockpit (partie avant surélevée)
-        const cockpitGeometry = new THREE.BoxGeometry(1.0, 0.3, 1.0);
-        const cockpitMaterial = this.shaderManager.getKartMaterial(new THREE.Color(color).multiplyScalar(0.8), 0.0);
-        const cockpit = new THREE.Mesh(cockpitGeometry, cockpitMaterial);
-        cockpit.position.set(0, 0.65, 0.3);
-        cockpit.castShadow = true;
-        this.group.add(cockpit);        // Siège du pilote
-        const seatGeometry = new THREE.BoxGeometry(0.6, 0.4, 0.8);
-        const seatMaterial = this.shaderManager.getKartMaterial(new THREE.Color(0x222222), 0.0);
-        const seat = new THREE.Mesh(seatGeometry, seatMaterial);
-        seat.position.set(0, 0.7, 0.2);
-        seat.castShadow = true;
-        this.group.add(seat);
+        // Nez profilé (cône pointant vers l'avant)
+        const nose = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.9, 16), mat(kartColor));
+        nose.position.set(0, 0.0, 1.35);
+        nose.rotation.x = Math.PI / 2;
+        nose.castShadow = true;
+        this.group.add(nose);
 
-        // Dossier du siège
-        const backrestGeometry = new THREE.BoxGeometry(0.6, 0.6, 0.1);
-        const backrest = new THREE.Mesh(backrestGeometry, seatMaterial);
-        backrest.position.set(0, 0.8, -0.15);
-        backrest.castShadow = true;
-        this.group.add(backrest);
-
-        // Volant
-        const steeringWheelGeometry = new THREE.TorusGeometry(0.15, 0.02, 8, 16);
-        const steeringWheelMaterial = this.shaderManager.getKartMaterial(new THREE.Color(0x111111), 0.0);
-        const steeringWheel = new THREE.Mesh(steeringWheelGeometry, steeringWheelMaterial);
-        steeringWheel.position.set(0, 0.9, 0.4);
-        steeringWheel.rotation.x = -Math.PI / 6;
-        steeringWheel.castShadow = true;
-        this.group.add(steeringWheel);
-
-        // Support du volant
-        const steeringColumnGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 8);
-        const steeringColumn = new THREE.Mesh(steeringColumnGeometry, steeringWheelMaterial);
-        steeringColumn.position.set(0, 0.75, 0.35);
-        steeringColumn.rotation.x = -Math.PI / 6;
-        steeringColumn.castShadow = true;
-        this.group.add(steeringColumn);
-
-        // Aileron arrière
-        const rearWingGeometry = new THREE.BoxGeometry(1.6, 0.05, 0.3);
-        const rearWingMaterial = this.shaderManager.getKartMaterial(new THREE.Color(color).multiplyScalar(0.7), 0.0);
-        const rearWing = new THREE.Mesh(rearWingGeometry, rearWingMaterial);
-        rearWing.position.set(0, 0.8, -1.2);
-        rearWing.castShadow = true;
-        this.group.add(rearWing);
-
-        // Supports de l'aileron
-        for (let x of [-0.6, 0.6]) {
-            const wingSupportGeometry = new THREE.CylinderGeometry(0.03, 0.03, 0.4, 6);
-            const wingSupportMaterial = this.shaderManager.getKartMaterial(new THREE.Color(0x444444), 0.0);
-            const wingSupport = new THREE.Mesh(wingSupportGeometry, wingSupportMaterial);
-            wingSupport.position.set(x, 0.6, -1.2);
-            wingSupport.castShadow = true;
-            this.group.add(wingSupport);
+        // Pontons latéraux
+        for (const side of [-1, 1]) {
+            const pod = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.3, 1.2), mat(darkColor));
+            pod.position.set(side * 0.78, -0.02, 0.1);
+            pod.castShadow = true;
+            this.group.add(pod);
         }
 
-        // Pare-chocs avant
-        const frontBumperGeometry = new THREE.BoxGeometry(1.3, 0.15, 0.2);
-        const bumperMaterial = this.shaderManager.getKartMaterial(new THREE.Color(0x666666), 0.0);
-        const frontBumper = new THREE.Mesh(frontBumperGeometry, bumperMaterial);
-        frontBumper.position.set(0, 0.2, 1.2);
+        // === Siège ===
+        const seatMat = mat(new THREE.Color(0x1a1a1a));
+        const seatBase = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.12, 0.7), seatMat);
+        seatBase.position.set(0, 0.25, -0.2);
+        seatBase.castShadow = true;
+        this.group.add(seatBase);
+        const seatBack = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.55, 0.12), seatMat);
+        seatBack.position.set(0, 0.5, -0.52);
+        seatBack.castShadow = true;
+        this.group.add(seatBack);
+
+        // === Pilote ===
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.32), mat(darkColor));
+        torso.position.set(0, 0.55, -0.2);
+        torso.castShadow = true;
+        this.group.add(torso);
+
+        // Casque + visière
+        const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 12), mat(new THREE.Color(0xf0f0f0)));
+        helmet.position.set(0, 0.95, -0.12);
+        helmet.castShadow = true;
+        this.group.add(helmet);
+        const visor = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.09, 0.08), mat(new THREE.Color(0x111822)));
+        visor.position.set(0, 0.94, 0.05);
+        this.group.add(visor);
+
+        // Bras vers le volant
+        for (const side of [-1, 1]) {
+            const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.5, 8), mat(darkColor));
+            arm.position.set(side * 0.17, 0.52, 0.08);
+            arm.rotation.x = Math.PI / 2.6;
+            arm.castShadow = true;
+            this.group.add(arm);
+        }
+
+        // === Volant + colonne ===
+        const steerMat = mat(new THREE.Color(0x111111));
+        const steeringWheel = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.03, 10, 20), steerMat);
+        steeringWheel.position.set(0, 0.6, 0.32);
+        steeringWheel.rotation.x = -Math.PI / 5;
+        this.group.add(steeringWheel);
+        const column = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.35, 8), steerMat);
+        column.position.set(0, 0.45, 0.27);
+        column.rotation.x = -Math.PI / 5;
+        this.group.add(column);
+
+        // === Aileron arrière ===
+        const wing = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.06, 0.34), mat(darkColor));
+        wing.position.set(0, 0.62, -1.4);
+        wing.castShadow = true;
+        this.group.add(wing);
+        for (const side of [-0.6, 0.6]) {
+            const support = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.45, 6), mat(new THREE.Color(0x333333)));
+            support.position.set(side, 0.42, -1.4);
+            support.castShadow = true;
+            this.group.add(support);
+        }
+
+        // === Pare-chocs ===
+        const bumperMat = mat(new THREE.Color(0x555555));
+        const frontBumper = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.14, 0.2), bumperMat);
+        frontBumper.position.set(0, -0.12, 1.5);
         frontBumper.castShadow = true;
         this.group.add(frontBumper);
-
-        // Pare-chocs arrière
-        const rearBumper = new THREE.Mesh(frontBumperGeometry, bumperMaterial);
-        rearBumper.position.set(0, 0.2, -1.2);
+        const rearBumper = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.16, 0.2), bumperMat);
+        rearBumper.position.set(0, -0.05, -1.45);
         rearBumper.castShadow = true;
         this.group.add(rearBumper);
 
-        // Roues améliorées
+        // === Roues (chaque roue est un sous-groupe qui tourne entièrement) ===
         this.wheels = [];
+        const tireMat = mat(new THREE.Color(0x1b1b1b));
+        const rimMat = mat(new THREE.Color(0xd0d0d0));
         const wheelPositions = [
-            [-0.8, 0, 1], [0.8, 0, 1],    // Roues avant
-            [-0.8, 0, -1], [0.8, 0, -1]  // Roues arrière
+            [-0.85, 0, 1.05], [0.85, 0, 1.05],   // avant (index 0,1 : direction)
+            [-0.85, 0, -1.05], [0.85, 0, -1.05]  // arrière
         ];
+        wheelPositions.forEach((pos) => {
+            const wheel = new THREE.Group();
 
-        wheelPositions.forEach((pos, index) => {            // Pneu
-            const tireGeometry = new THREE.CylinderGeometry(0.35, 0.35, 0.25, 12);
-            const tireMaterial = this.shaderManager.getKartMaterial(new THREE.Color(0x222222), 0.0);
-            const tire = new THREE.Mesh(tireGeometry, tireMaterial);
-            tire.position.set(pos[0], pos[1], pos[2]);
-            tire.rotation.z = Math.PI / 2;
+            const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.32, 18), tireMat);
+            tire.rotation.z = Math.PI / 2; // axe le long de X
             tire.castShadow = true;
-            this.group.add(tire);// Jante
-            const rimGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.15, 8);
-            const rimMaterial = this.shaderManager.getKartMaterial(new THREE.Color(0xCCCCCC), 0.0);
-            const rim = new THREE.Mesh(rimGeometry, rimMaterial);
-            rim.position.set(pos[0], pos[1], pos[2]);
-            rim.rotation.z = Math.PI / 2;
-            rim.castShadow = true;
-            this.group.add(rim);
+            wheel.add(tire);
 
-            // Rayons de jante
-            for (let i = 0; i < 5; i++) {
-                const spokeGeometry = new THREE.BoxGeometry(0.02, 0.2, 0.02);
-                const spoke = new THREE.Mesh(spokeGeometry, rimMaterial);
-                const angle = (i / 5) * Math.PI * 2;
-                spoke.position.set(
-                    pos[0] + Math.cos(angle) * 0.1,
-                    pos[1] + Math.sin(angle) * 0.1,
-                    pos[2]
-                );
-                spoke.rotation.z = angle + Math.PI / 2;
-                spoke.castShadow = true;
-                this.group.add(spoke);
+            const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.34, 12), rimMat);
+            rim.rotation.z = Math.PI / 2;
+            wheel.add(rim);
+
+            // Rayons (barres dans le plan de la roue)
+            for (let i = 0; i < 4; i++) {
+                const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.42, 0.05), rimMat);
+                spoke.rotation.x = (i / 4) * Math.PI;
+                wheel.add(spoke);
             }
 
-            this.wheels.push(tire);
-        });        // Détails décoratifs - bandes colorées
-        const stripeGeometry = new THREE.BoxGeometry(1.5, 0.05, 0.3);
-        const brightColor = new THREE.Color(color).multiplyScalar(1.5);
-        // Limiter les valeurs RGB entre 0 et 1
+            wheel.position.set(pos[0], pos[1], pos[2]);
+            this.group.add(wheel);
+            this.wheels.push(wheel);
+        });
+
+        // === Livrée : bandes latérales lumineuses ===
+        const brightColor = kartColor.clone().multiplyScalar(1.4);
         brightColor.r = Math.min(brightColor.r, 1);
         brightColor.g = Math.min(brightColor.g, 1);
-        brightColor.b = Math.min(brightColor.b, 1);        const stripeMaterial = this.shaderManager.getKartMaterial(brightColor, 0.0);
-
-        // Bande sur le côté
-        for (let side of [-1, 1]) {
-            const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
-            stripe.position.set(0, 0.45, 0);
-            stripe.rotation.y = side * Math.PI / 2;
-            stripe.position.x = side * 0.7;
+        brightColor.b = Math.min(brightColor.b, 1);
+        const stripeMat = mat(brightColor);
+        for (const side of [-1, 1]) {
+            const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 1.4), stripeMat);
+            stripe.position.set(side * 0.62, 0.05, 0.0);
             this.group.add(stripe);
         }
 
-        // Numéro sur le kart (pour différencier les karts)
+        // Plaque numéro pour les karts IA (sur le dossier)
         if (!this.isPlayer) {
-            const numberGeometry = new THREE.BoxGeometry(0.3, 0.3, 0.02);
-            const numberMaterial = this.shaderManager.getKartMaterial(new THREE.Color(0xFFFFFF), 0.0);
-            const numberPlate = new THREE.Mesh(numberGeometry, numberMaterial);
-            numberPlate.position.set(0, 0.6, 1.1);
-            numberPlate.castShadow = true;
-            this.group.add(numberPlate);
+            const plate = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.03), mat(new THREE.Color(0xffffff)));
+            plate.position.set(0, 0.55, -0.59);
+            this.group.add(plate);
         }
 
         // Échappement
-        const exhaustGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.4, 8);        const exhaustMaterial = this.shaderManager.getKartMaterial(new THREE.Color(0x444444), 0.0);
-        const exhaust = new THREE.Mesh(exhaustGeometry, exhaustMaterial);
-        exhaust.position.set(-0.4, 0.3, -1.1);
-        exhaust.rotation.x = Math.PI / 2;
+        const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.5, 8), mat(new THREE.Color(0x3a3a3a)));
+        exhaust.position.set(-0.5, 0.05, -1.3);
+        exhaust.rotation.x = Math.PI / 2.2;
         exhaust.castShadow = true;
         this.group.add(exhaust);
+
+        // Agrandir l'ensemble (~1.4x) : karts plus imposants, roues posées au sol.
+        this.group.scale.setScalar(1.4);
 
         this.game.getScene().add(this.group);
 
