@@ -93,6 +93,18 @@
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
         }
 
+        /* Réserver une largeur fixe pour les valeurs dynamiques : sinon la pilule
+           se redimensionne quand le contenu change (1 -> 100 km/h), ce qui fait
+           "danser" tout le HUD. tabular-nums = chiffres à chasse fixe. */
+        #ui span {
+            display: inline-block;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        #ui #speed { min-width: 3ch; }
+        #ui #position { min-width: 1ch; }
+        #ui #lapCount { min-width: 3ch; }
+
         /* Menu pause */
         #pauseMenu {
             position: absolute;
