@@ -1,14 +1,29 @@
 # pleymor-github-page
 
-## Instructions ultra simples pour publier sur GitHub Pages
-Créer un compte GitHub (s’il n’en a pas, ou utilise ton compte perso temporairement).
+Source of the **pleymor.com** homepage — a projects portfolio linking to the apps
+hosted on my VPS, plus the Karting 3D game served from GitHub Pages.
 
-Créer un nouveau repo : nom du projet, public.
+## Structure
 
-Uploader ses fichiers (index.html, etc.).
+- `index.html` — the projects homepage, deployed to `pleymor.com`.
+- `kartz/` — the Karting 3D game, served by GitHub Pages.
+- `deploy.sh` — deploys `index.html` to the VPS.
 
-Aller dans Settings → Pages → Source → choisir main branch, / (root).
+## Deploy
 
-L’URL du site sera automatiquement générée.
+The homepage is served by nginx from `/var/www/pleymor` on the VPS:
 
-Exemple pour celle-ci: https://pleymor.github.io/pleymor-github-page/.
+```sh
+./deploy.sh
+```
+
+This rsyncs `index.html` to the server and installs it into the web root (via `sudo`).
+It does **not** touch `kartz/`.
+
+## Karting 3D (GitHub Pages)
+
+The game stays published through GitHub Pages and is linked from the homepage:
+
+https://pleymor.github.io/pleymor-github-page/kartz/
+
+To keep it live: Settings → Pages → Source → `main` branch, `/` (root).

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio de Jeux Immersifs</title>
+    <title>Pleymor — Mes projets</title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -41,7 +41,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
+            background:
                 radial-gradient(circle at 20% 20%, rgba(0, 212, 255, 0.05) 0%, transparent 50%),
                 radial-gradient(circle at 80% 80%, rgba(255, 0, 128, 0.05) 0%, transparent 50%),
                 radial-gradient(circle at 60% 40%, rgba(0, 255, 136, 0.03) 0%, transparent 50%);
@@ -89,10 +89,10 @@
             line-height: 1.6;
         }
 
-        /* Main game showcase */
-        .game-showcase {
-            display: flex;
-            flex-wrap: wrap;
+        /* Project showcase grid */
+        .project-showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             justify-content: center;
             padding: 40px 20px;
             gap: 30px;
@@ -100,20 +100,21 @@
             margin: 0 auto;
         }
 
-        .game-card {
+        .project-card {
             background: var(--glass-bg);
             backdrop-filter: blur(15px);
             border: 2px solid var(--glass-border);
             border-radius: 25px;
             padding: 40px;
-            max-width: 500px;
             text-align: center;
             transition: all 0.4s ease;
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
-        .game-card::before {
+        .project-card::before {
             content: '';
             position: absolute;
             top: 0;
@@ -124,31 +125,39 @@
             transition: left 0.5s;
         }
 
-        .game-card:hover::before {
+        .project-card:hover::before {
             left: 100%;
         }
 
-        .game-card:hover {
+        .project-card:hover {
             transform: translateY(-10px) scale(1.02);
-            box-shadow: 
+            box-shadow:
                 0 20px 40px rgba(0, 0, 0, 0.4),
                 0 0 30px var(--neon-blue);
             border-color: var(--neon-blue);
         }
 
-        .game-card h2 {
+        .project-card .icon {
+            font-size: 3.5em;
+            margin-bottom: 15px;
+            display: block;
+            line-height: 1;
+        }
+
+        .project-card h2 {
             font-family: 'Orbitron', monospace;
-            font-size: 2.2em;
+            font-size: 1.8em;
             margin-bottom: 20px;
             color: var(--neon-blue);
             text-shadow: 0 0 15px var(--neon-blue);
         }
 
-        .game-card p {
-            font-size: 1.1em;
+        .project-card p {
+            font-size: 1.05em;
             line-height: 1.6;
             margin-bottom: 30px;
             opacity: 0.9;
+            flex-grow: 1;
         }
 
         .play-button {
@@ -157,79 +166,28 @@
             background: linear-gradient(45deg, var(--primary-color), var(--neon-pink));
             border: none;
             color: white;
-            padding: 20px 40px;
-            font-size: 1.3em;
+            padding: 16px 32px;
+            font-size: 1.1em;
             border-radius: 50px;
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
+            align-self: center;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             text-transform: uppercase;
             letter-spacing: 2px;
-            box-shadow: 
+            box-shadow:
                 0 10px 30px rgba(255, 107, 53, 0.4),
                 0 0 20px rgba(255, 0, 128, 0.3);
         }
 
         .play-button:hover {
             transform: translateY(-3px) scale(1.05);
-            box-shadow: 
+            box-shadow:
                 0 15px 40px rgba(255, 107, 53, 0.6),
                 0 0 30px rgba(255, 0, 128, 0.5);
             background: linear-gradient(45deg, var(--neon-pink), var(--primary-color));
             text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
-        }
-
-        /* Features grid */
-        .features {
-            padding: 60px 20px;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .features h2 {
-            font-family: 'Orbitron', monospace;
-            text-align: center;
-            font-size: 2.5em;
-            margin-bottom: 40px;
-            color: var(--neon-green);
-            text-shadow: 0 0 20px var(--neon-green);
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            margin-top: 40px;
-        }
-
-        .feature-item {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 15px;
-            padding: 25px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .feature-item:hover {
-            transform: translateY(-5px);
-            border-color: var(--neon-blue);
-            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
-        }
-
-        .feature-item .icon {
-            font-size: 3em;
-            margin-bottom: 15px;
-            display: block;
-        }
-
-        .feature-item h3 {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.2em;
-            margin-bottom: 10px;
-            color: var(--neon-blue);
         }
 
         /* Footer */
@@ -252,12 +210,12 @@
             .header h1 {
                 font-size: 2.5em;
             }
-            
-            .game-card {
+
+            .project-card {
                 padding: 30px;
             }
-            
-            .features-grid {
+
+            .project-showcase {
                 grid-template-columns: 1fr;
             }
         }
@@ -271,61 +229,65 @@
 </head>
 <body>
     <div class="header">
-        <h1>PORTFOLIO de Jeux HTML</h1>
-        <p>Découvrez l'avenir du gaming avec des expériences immersives et des technologies web avancées</p>
+        <h1>PLEYMOR</h1>
+        <p>Mes projets — jeux, applications web et expérimentations hébergés sur mon serveur.</p>
     </div>
 
-    <div class="game-showcase">
-        <div class="game-card">
-            <h2>🏁 KARTING 3D</h2>
+    <div class="project-showcase">
+        <div class="project-card">
+            <span class="icon">🏁</span>
+            <h2>Karting 3D</h2>
             <p>
-                Plongez dans une expérience de course révolutionnaire avec des graphismes 3D époustouflants, 
-                un système audio immersif et des effets météorologiques dynamiques. 
-                Course contre des IA intelligentes sur des circuits procéduraux uniques.
+                Une course en 3D avec graphismes Three.js, circuits procéduraux,
+                IA compétitive, effets météo et audio immersif.
             </p>
-            <a href="kartz/" class="play-button">🚀 JOUER MAINTENANT</a>
+            <a href="https://pleymor.github.io/pleymor-github-page/kartz/" class="play-button" target="_blank" rel="noopener">🚀 Jouer ↗</a>
         </div>
-    </div>
 
-    <div class="features">
-        <h2>✨ TECHNOLOGIES AVANCÉES ✨</h2>
-        <div class="features-grid">
-            <div class="feature-item">
-                <span class="icon">🎮</span>
-                <h3>Three.js 3D Engine</h3>
-                <p>Rendu 3D haute performance avec ombres dynamiques et éclairage réaliste</p>
-            </div>
-            <div class="feature-item">
-                <span class="icon">🎵</span>
-                <h3>Audio Immersif</h3>
-                <p>Système audio hybride avec musiques de fond et effets sonores procéduraux</p>
-            </div>
-            <div class="feature-item">
-                <span class="icon">🌧️</span>
-                <h3>Météo Dynamique</h3>
-                <p>Système de particules avancé pour des effets de pluie réalistes</p>
-            </div>
-            <div class="feature-item">
-                <span class="icon">🗺️</span>
-                <h3>Radar Temps Réel</h3>
-                <p>Minimap interactive avec tracking des positions en temps réel</p>
-            </div>
-            <div class="feature-item">
-                <span class="icon">🤖</span>
-                <h3>IA Compétitive</h3>
-                <p>Intelligence artificielle avancée pour des adversaires challengeants</p>
-            </div>
-            <div class="feature-item">
-                <span class="icon">📱</span>
-                <h3>Design Responsive</h3>
-                <p>Interface adaptative pour tous les écrans et appareils</p>
-            </div>
+        <div class="project-card">
+            <span class="icon">🎮</span>
+            <h2>SNES Emulator</h2>
+            <p>
+                Rejouez aux classiques de la Super Nintendo directement dans le navigateur.
+                Chargez vos ROMs et profitez du rétro-gaming.
+            </p>
+            <a href="https://snes.pleymor.com" class="play-button" target="_blank" rel="noopener">Visiter ↗</a>
+        </div>
+
+        <div class="project-card">
+            <span class="icon">🔌</span>
+            <h2>Reveo</h2>
+            <p>
+                Une application web (PWA) pour gérer son compte de bornes
+                de recharge Reveo.
+            </p>
+            <a href="https://reveo.pleymor.com" class="play-button" target="_blank" rel="noopener">Visiter ↗</a>
+        </div>
+
+        <div class="project-card">
+            <span class="icon">🌦️</span>
+            <h2>Archives météo</h2>
+            <p>
+                Explorez l'historique météorologique mondial à partir des données
+                d'Open-Meteo, avec visualisations interactives.
+            </p>
+            <a href="https://archivesmeteo.pleymor.com" class="play-button" target="_blank" rel="noopener">Visiter ↗</a>
+        </div>
+
+        <div class="project-card">
+            <span class="icon">🧬</span>
+            <h2>Évolution animale</h2>
+            <p>
+                Une visualisation interactive de l'arbre du vivant et de
+                l'évolution des espèces animales.
+            </p>
+            <a href="https://lifetree.pleymor.com" class="play-button" target="_blank" rel="noopener">Visiter ↗</a>
         </div>
     </div>
 
     <div class="footer">
-        <p>&copy; 2025 Karting 3D Portfolio - Développé avec passion et technologies modernes</p>
-        <p>🚀 Repoussons les limites du web gaming ensemble 🚀</p>
+        <p>&copy; 2026 Pleymor — Développé avec passion et technologies web modernes</p>
+        <p>🚀 Repoussons les limites du web ensemble 🚀</p>
     </div>
 </body>
 </html>
