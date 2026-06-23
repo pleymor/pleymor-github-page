@@ -78,15 +78,19 @@ class Game {
     }
 
     createKarts() {
+        const startRotation = this.track.getStartRotation();
+
         // Créer le kart du joueur
         this.playerKart = new Kart(0xff4444, true, this);
         this.playerKart.setPosition(this.track.getStartPosition(0));
+        this.playerKart.rotation = startRotation;
 
         // Créer les karts IA
         const aiColors = [0x44ff44, 0x4444ff, 0xffff44];
         for (let i = 0; i < 3; i++) {
             const aiKart = new Kart(aiColors[i], false, this);
             aiKart.setPosition(this.track.getStartPosition(i + 1));
+            aiKart.rotation = startRotation;
             this.aiKarts.push(aiKart);
             this.aiLaps.push(0);
         }
@@ -244,43 +248,42 @@ class Game {
         console.log('Jeu repris');
     }
 
+    // Retirer de la scène TOUS les meshes du circuit courant.
+    // Doit être appelé AVANT de régénérer, sinon les références (trackMesh,
+    // flags, centerLine, checkpointMeshes...) pointent déjà sur les nouveaux
+    // meshes et les anciens restent orphelins dans la scène.
+    removeTrackFromScene() {
+        if (!this.track) return;
+        const t = this.track;
+        if (t.trackMesh) this.scene.remove(t.trackMesh);
+        if (t.terrainMesh) this.scene.remove(t.terrainMesh);
+        if (t.baseMesh) this.scene.remove(t.baseMesh);
+        if (t.startLine) this.scene.remove(t.startLine);
+        if (t.centerLine) this.scene.remove(t.centerLine);
+        if (t.flags) t.flags.forEach(flag => this.scene.remove(flag));
+        if (t.checkpointMeshes) t.checkpointMeshes.forEach(cp => this.scene.remove(cp));
+        if (t.trees) t.trees.forEach(tree => this.scene.remove(tree.group));
+    }
+
     // Méthode pour régénérer le circuit (appelée par l'UI)
     async onTrackRegenerated() {
         console.log('🔄 Circuit régénéré, mise à jour de la scène...');
-        
-        // Supprimer l'ancien circuit de la scène
-        if (this.track) {
-            // Supprimer tous les éléments du track de la scène
-            if (this.track.trackMesh) this.scene.remove(this.track.trackMesh);
-            if (this.track.terrainMesh) this.scene.remove(this.track.terrainMesh);
-            if (this.track.baseMesh) this.scene.remove(this.track.baseMesh);
-            if (this.track.startLine) this.scene.remove(this.track.startLine);
-            
-            // Supprimer les drapeaux
-            if (this.track.flags) {
-                this.track.flags.forEach(flag => this.scene.remove(flag));
-            }
-            
-            // Supprimer les arbres
-            this.track.trees.forEach(tree => {
-                this.scene.remove(tree.group);
-            });
-        }
-        
+
         // Ajouter le nouveau circuit à la scène
         this.track.addToScene(this.scene);
         
         // Repositionner les karts aux nouvelles positions de départ
+        const startRotation = this.track.getStartRotation();
         if (this.playerKart) {
             this.playerKart.setPosition(this.track.getStartPosition(0));
-            this.playerKart.rotation = 0;
+            this.playerKart.rotation = startRotation;
             this.playerKart.velocity.set(0, 0, 0);
             this.playerKart.speed = 0;
         }
-        
+
         this.aiKarts.forEach((aiKart, index) => {
             aiKart.setPosition(this.track.getStartPosition(index + 1));
-            aiKart.rotation = 0;
+            aiKart.rotation = startRotation;
             aiKart.velocity.set(0, 0, 0);
             aiKart.speed = 0;
         });
@@ -314,6 +317,9 @@ class Game {
       // Méthode publique pour régénérer le circuit (appelée par l'UI)
     async regenerateTrack() {
         if (this.track) {
+            // Retirer l'ancien circuit AVANT de régénérer (sinon les meshes
+            // précédents deviennent orphelins et s'accumulent dans la scène).
+            this.removeTrackFromScene();
             await this.track.regenerateTrack();
             await this.onTrackRegenerated();
         }
