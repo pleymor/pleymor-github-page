@@ -481,6 +481,34 @@ class Track {    constructor(game = null) {
             .subVectors(this.trackPoints[1], this.trackPoints[0]).normalize();
         return Math.atan2(direction.x, direction.z);
     }
+
+    // Vrai si la position est sur le bitume (distance à l'axe de la piste <=
+    // demi-largeur). Sert à détecter le passage sur l'herbe.
+    isOnTrack(position, halfWidth = 18) {
+        const n = this.trackPoints.length;
+        if (n < 2) return true;
+        let minDist = Infinity;
+        for (let i = 0; i < n; i++) {
+            const d = this.pointToSegmentDistance(position, this.trackPoints[i], this.trackPoints[(i + 1) % n]);
+            if (d < minDist) {
+                minDist = d;
+                if (minDist <= halfWidth) return true; // sortie anticipée
+            }
+        }
+        return false;
+    }
+
+    // Distance (plan XZ) d'un point au segment [a, b].
+    pointToSegmentDistance(p, a, b) {
+        const abx = b.x - a.x, abz = b.z - a.z;
+        const apx = p.x - a.x, apz = p.z - a.z;
+        const abLen2 = abx * abx + abz * abz;
+        let t = abLen2 > 0 ? (apx * abx + apz * abz) / abLen2 : 0;
+        t = Math.max(0, Math.min(1, t));
+        const dx = apx - abx * t, dz = apz - abz * t;
+        return Math.sqrt(dx * dx + dz * dz);
+    }
+
       getTerrainHeight(x, z) {
         // Pour un terrain plat, retourner 0
         return 0;

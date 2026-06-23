@@ -21,6 +21,7 @@ class Kart {    constructor(color, isPlayer = false, game) {
         this.rotation = 0;
         this.speed = 0;
         this.turnSpeed = 0;
+        this.onGrass = false; // Hors-piste : ralentissement + particules
         this.laps = 0;
         this.trackProgress = 0;
         this.lastCheckpoint = 0;
@@ -210,6 +211,8 @@ class Kart {    constructor(color, isPlayer = false, game) {
 
         // Créer le système de particules pour la fumée de dérapage
         this.createDriftEffects();
+        // Créer le système de particules d'herbe (hors-piste)
+        this.createGrassEffects();
     } createDriftEffects() {
         // Géométrie des particules améliorée
         const particleCount = 100; // Plus de particules pour un effet plus dense
@@ -278,6 +281,9 @@ class Kart {    constructor(color, isPlayer = false, game) {
             this.handleAI();
         }
 
+        // Surface (herbe vs piste) avant la physique pour brider la vitesse.
+        this.updateSurface();
+
         // Log physics and transform updates
         const oldPosition = this.position.clone();
         this.applyPhysics();
@@ -294,6 +300,7 @@ class Kart {    constructor(color, isPlayer = false, game) {
             });
         }        this.updateTransform();
         this.updateDriftEffects();
+        this.updateGrassEffects();
         this.updateShaders();
         this.checkLapProgress();
     }    updateShaders() {
@@ -881,6 +888,96 @@ class Kart {    constructor(color, isPlayer = false, game) {
         // Ajuster l'opacité en fonction de la vitesse de dérapage
         const driftIntensity = Math.min(Math.abs(this.speed) / this.maxSpeed, 1.0);
         this.driftEffects.material.opacity = 0.4 + driftIntensity * 0.4;
+    }
+
+    // Détecte l'herbe (hors-piste) et bride la vitesse en conséquence.
+    updateSurface() {
+        const track = this.game.getTrack();
+        this.onGrass = !!(track && !track.isOnTrack(this.position, 18));
+
+        if (this.onGrass) {
+            const grassCap = this.maxSpeed * 0.45; // vitesse max sur l'herbe
+            if (Math.abs(this.speed) > grassCap) {
+                this.speed *= 0.90; // freinage net à l'arrivée sur l'herbe
+                if (this.speed > grassCap) this.speed = Math.max(this.speed, grassCap);
+            } else {
+                this.speed *= 0.985; // traînée continue
+            }
+        }
+    }
+
+    // Petit système de particules vertes projetées sur l'herbe.
+    createGrassEffects() {
+        const count = 60;
+        const geo = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const velocities = new Float32Array(count * 3);
+        const ages = new Float32Array(count);
+        for (let i = 0; i < count; i++) ages[i] = 1.0; // toutes "mortes" au départ
+
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geo.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+        geo.setAttribute('age', new THREE.BufferAttribute(ages, 1));
+
+        const material = new THREE.PointsMaterial({
+            color: 0x4f8f33,
+            size: 0.55,
+            transparent: true,
+            opacity: 0.9,
+            depthWrite: false
+        });
+
+        this.grassEffects = new THREE.Points(geo, material);
+        this.grassEffects.frustumCulled = false;
+        this.grassEffects.visible = false;
+        this.game.getScene().add(this.grassEffects);
+    }
+
+    updateGrassEffects() {
+        if (!this.grassEffects) return;
+
+        const positions = this.grassEffects.geometry.attributes.position.array;
+        const velocities = this.grassEffects.geometry.attributes.velocity.array;
+        const ages = this.grassEffects.geometry.attributes.age.array;
+        const count = ages.length;
+
+        const emitting = this.onGrass && Math.abs(this.speed) > this.maxSpeed * 0.08;
+        const rear = new THREE.Vector3(Math.sin(this.rotation), 0, Math.cos(this.rotation));
+        let alive = 0;
+
+        for (let i = 0; i < count; i++) {
+            const i3 = i * 3;
+
+            if (ages[i] >= 1.0) {
+                // Réémettre derrière le kart tant qu'on roule sur l'herbe.
+                if (emitting && Math.random() < 0.4) {
+                    positions[i3] = this.position.x - rear.x * 1.0 + (Math.random() - 0.5) * 1.4;
+                    positions[i3 + 1] = this.position.y - 0.3;
+                    positions[i3 + 2] = this.position.z - rear.z * 1.0 + (Math.random() - 0.5) * 1.4;
+
+                    velocities[i3] = -rear.x * 0.15 + (Math.random() - 0.5) * 0.25;
+                    velocities[i3 + 1] = 0.12 + Math.random() * 0.12; // projetées vers le haut
+                    velocities[i3 + 2] = -rear.z * 0.15 + (Math.random() - 0.5) * 0.25;
+
+                    ages[i] = 0;
+                    alive++;
+                }
+            } else {
+                ages[i] += 0.045;
+                positions[i3] += velocities[i3];
+                positions[i3 + 1] += velocities[i3 + 1];
+                positions[i3 + 2] += velocities[i3 + 2];
+                velocities[i3] *= 0.9;
+                velocities[i3 + 1] -= 0.012; // gravité
+                velocities[i3 + 2] *= 0.9;
+                alive++;
+            }
+        }
+
+        this.grassEffects.geometry.attributes.position.needsUpdate = true;
+        this.grassEffects.geometry.attributes.velocity.needsUpdate = true;
+        this.grassEffects.geometry.attributes.age.needsUpdate = true;
+        this.grassEffects.visible = alive > 0;
     }
 
     createExhaustParticle() {
