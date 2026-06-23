@@ -23,397 +23,133 @@ class Track {    constructor(game = null) {
         // Générer les checkpoints après avoir créé le circuit
         this.generateCheckpoints();
     }generateTrackPoints() {
-        console.log('🏁 Génération d\'un circuit réaliste avec sections variées...');
-        
-        // Réinitialiser les points
+        console.log('🏁 Génération d\'un circuit fermé fluide...');
         this.trackPoints = [];
-        
-        // Configuration du circuit
-        const trackSections = this.generateTrackSections();
-        
-        // Générer les points pour chaque section
-        let currentPosition = new THREE.Vector3(0, 0, 0);
-        let currentDirection = new THREE.Vector3(1, 0, 0); // Direction initiale : vers la droite
-        
-        for (let i = 0; i < trackSections.length; i++) {
-            const section = trackSections[i];
-            const sectionPoints = this.generateSectionPoints(section, currentPosition, currentDirection);
-            
-            // Ajouter les points de la section (sans dupliquer le premier point sauf pour la première section)
-            if (i === 0) {
-                this.trackPoints.push(...sectionPoints);
-            } else {
-                this.trackPoints.push(...sectionPoints.slice(1));
-            }
-            
-            // Mettre à jour la position et direction courantes
-            if (sectionPoints.length > 1) {
-                currentPosition = sectionPoints[sectionPoints.length - 1].clone();
-                const prevPoint = sectionPoints[sectionPoints.length - 2];
-                currentDirection = new THREE.Vector3().subVectors(currentPosition, prevPoint).normalize();
-            }
-        }        // Fermer le circuit en douceur
-        this.closeCircuit();
-        
-        // Valider les longueurs de segments
-        this.validateMinimumSegmentLengths();
-        
-        // Détecter et corriger les transitions abruptes
-        this.validateAndFixSharpTransitions();
-          // Lisser le circuit final
-        this.smoothTrack();
-        
-        // Diagnostic de qualité du circuit
-        this.diagnoseTrackQuality();
-        
-        console.log(`✅ Circuit généré avec ${trackSections.length} sections et ${this.trackPoints.length} points au total`);
-    }    generateTrackSections() {
-        // Types de sections de circuit avec paramètres encore plus conservateurs
-        const sectionTypes = [
-            { type: 'straight', name: 'Ligne droite', minLength: 100, maxLength: 180 }, // Sections plus longues
-            { type: 'corner', name: 'Virage', minAngle: 20, maxAngle: 60, radius: 100 }, // Angles plus doux, rayon plus grand
-            { type: 'hairpin', name: 'Épingle', angle: 140, radius: 60 }, // Rayon plus grand, angle plus petit
-            { type: 'chicane', name: 'Chicane', length: 140, amplitude: 20 }, // Amplitude encore plus réduite
-            { type: 'esses', name: 'Esses', length: 200, turns: 2 }, // Plus long
-            { type: 'long_corner', name: 'Courbe longue', minAngle: 25, maxAngle: 70, radius: 140 } // Angles plus doux
-        ];
-        
-        const sections = [];
-        const numSections = 6 + Math.floor(Math.random() * 3); // 6-8 sections (moins de variation)
-        
-        // Toujours commencer par une ligne droite (ligne de départ)
-        sections.push({
-            type: 'straight',
-            name: 'Ligne de départ',
-            length: 120, // Plus long
-            isStart: true
-        });        // Générer les autres sections
-        for (let i = 1; i < numSections; i++) {
-            let availableTypes = [...sectionTypes];
-            
-            // Éviter trop de lignes droites consécutives
-            if (sections[sections.length - 1].type === 'straight') {
-                availableTypes = availableTypes.filter(t => t.type !== 'straight');
-            }
-            
-            // Éviter les virages serrés consécutifs (hairpin et corners serrés)
-            if (sections[sections.length - 1].type === 'hairpin') {
-                availableTypes = availableTypes.filter(t => t.type !== 'hairpin' && t.type !== 'corner');
-            }
-            
-            // Éviter les corners après les corners pour plus de fluidité
-            if (sections[sections.length - 1].type === 'corner') {
-                availableTypes = availableTypes.filter(t => t.type !== 'hairpin');
-            }
-            
-            // Priorité aux lignes droites après les virages serrés
-            if (sections[sections.length - 1].type === 'hairpin' || sections[sections.length - 1].type === 'corner') {
-                if (Math.random() < 0.6) { // 60% de chance d'avoir une ligne droite
-                    availableTypes = availableTypes.filter(t => t.type === 'straight');
-                }
-            }
-            
-            // Choisir un type de section
-            const sectionType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
-            
-            let section = { ...sectionType };
-              // Personnaliser selon le type avec limites ultra-conservatrices
-            switch (sectionType.type) {
-                case 'straight':
-                    section.length = sectionType.minLength + Math.random() * (sectionType.maxLength - sectionType.minLength);
-                    break;
-                case 'corner':
-                    section.angle = sectionType.minAngle + Math.random() * (sectionType.maxAngle - sectionType.minAngle);
-                    section.direction = Math.random() < 0.5 ? 'left' : 'right';
-                    section.radius = sectionType.radius + (Math.random() - 0.5) * 15; // Variation très réduite
-                    section.radius = Math.max(section.radius, 80); // Minimum plus élevé
-                    break;
-                case 'hairpin':
-                    section.direction = Math.random() < 0.5 ? 'left' : 'right';
-                    section.radius = sectionType.radius + (Math.random() - 0.5) * 10; // Variation très limitée
-                    section.radius = Math.max(section.radius, 50); // Minimum plus élevé
-                    section.angle = 120 + Math.random() * 20; // Angle très limité (120-140°)
-                    break;
-                case 'chicane':
-                    section.direction = Math.random() < 0.5 ? 'left' : 'right';
-                    section.amplitude = Math.max(12, sectionType.amplitude + (Math.random() - 0.5) * 8); // Amplitude très limitée
-                    break;
-                case 'esses':
-                    section.direction = Math.random() < 0.5 ? 'left' : 'right';
-                    section.turns = 2; // Toujours 2 virages pour la simplicité
-                    break;
-                case 'long_corner':
-                    section.angle = sectionType.minAngle + Math.random() * (sectionType.maxAngle - sectionType.minAngle);
-                    section.direction = Math.random() < 0.5 ? 'left' : 'right';
-                    section.radius = sectionType.radius + (Math.random() - 0.5) * 20; // Variation réduite
-                    section.radius = Math.max(section.radius, 100); // Minimum plus élevé
-                    break;
-            }
-            
-            sections.push(section);
-        }
-        
-        console.log(`🏎️ ${numSections} sections générées:`, sections.map(s => s.name).join(', '));
-        return sections;
+
+        // 1. Points de contrôle répartis autour d'une ellipse : la boucle est
+        //    fermée par construction (pas de "fermeture" forcée ensuite).
+        const controlPoints = this.generateControlPoints();
+
+        // 2. Interpolation par spline Catmull-Rom centripète fermée : un seul
+        //    passage produit une courbe lisse et continue, sans cusps.
+        const splinePoints = this.sampleClosedCatmullRom(controlPoints, 16);
+
+        // 3. Rééchantillonnage à pas d'arc constant pour un ruban et des
+        //    pointillés réguliers.
+        this.trackPoints = this.resampleByArcLength(splinePoints, 6);
+
+        console.log(`✅ Circuit fermé généré avec ${this.trackPoints.length} points`);
     }
-      generateSectionPoints(section, startPos, startDir) {
+
+    // Génère les points de contrôle en RADIAL : un rayon par angle, parcouru en
+    // tournant toujours dans le même sens. Tant que le rayon reste > 0 et que
+    // les angles sont strictement croissants, la boucle est SIMPLE (jamais de
+    // croisement) — ce qui permet de creuser des baies vers l'intérieur sans
+    // risque. On alterne sommets "extérieurs" (lobes) et "intérieurs" (baies)
+    // pour obtenir un tracé concave et nerveux plutôt qu'un ovale convexe.
+    generateControlPoints() {
+        const numPoints = 10 + Math.floor(Math.random() * 3); // 10-12 sommets
+        const maxRadius = 300;
+        const step = (Math.PI * 2) / numPoints;
+
+        // Bandes de rayon : extérieur ~proche du max, intérieur creusé.
+        const outerLo = 0.85, outerHi = 1.0;
+        const innerLo = 0.6, innerHi = 0.78;
+
         const points = [];
-        const pointSpacing = 5; // Espacement augmenté pour éviter les virages trop serrés
-        
-        switch (section.type) {
-            case 'straight':
-                return this.generateStraightPoints(section, startPos, startDir, pointSpacing);
-                
-            case 'corner':
-            case 'long_corner':
-                return this.generateCornerPoints(section, startPos, startDir, pointSpacing);
-                
-            case 'hairpin':
-                return this.generateHairpinPoints(section, startPos, startDir, pointSpacing);
-                
-            case 'chicane':
-                return this.generateChicanePoints(section, startPos, startDir, pointSpacing);
-                
-            case 'esses':
-                return this.generateEssesPoints(section, startPos, startDir, pointSpacing);
-                
-            default:
-                return this.generateStraightPoints(section, startPos, startDir, pointSpacing);
+        for (let i = 0; i < numPoints; i++) {
+            // Gigue angulaire < demi-pas : garde les angles strictement croissants.
+            const angle = i * step + (Math.random() - 0.5) * step * 0.5;
+
+            // Alternance lobe/baie, avec saut occasionnel pour casser la régularité.
+            const isOuter = (i % 2 === 0) !== (Math.random() < 0.2);
+            const band = isOuter
+                ? outerLo + Math.random() * (outerHi - outerLo)
+                : innerLo + Math.random() * (innerHi - innerLo);
+            const radius = maxRadius * band;
+
+            points.push(new THREE.Vector3(
+                Math.cos(angle) * radius,
+                0,
+                Math.sin(angle) * radius
+            ));
         }
-    }
-    
-    generateStraightPoints(section, startPos, startDir, spacing) {
-        const points = [];
-        const length = section.length || 100;
-        const numPoints = Math.floor(length / spacing);
-        
-        for (let i = 0; i <= numPoints; i++) {
-            const distance = i * spacing;
-            const point = startPos.clone().add(startDir.clone().multiplyScalar(distance));
-            points.push(point);
-        }
-        
         return points;
     }
-      generateCornerPoints(section, startPos, startDir, spacing) {
-        const points = [];
-        const radius = section.radius || 80;
-        const angle = (section.angle || 90) * Math.PI / 180;
-        const direction = section.direction === 'left' ? 1 : -1;
-        
-        // Calculer le centre du virage
-        const perpendicular = new THREE.Vector3(-startDir.z, 0, startDir.x).multiplyScalar(direction);
-        const center = startPos.clone().add(perpendicular.multiplyScalar(radius));
-        
-        // Générer les points le long de l'arc avec minimum garanti
-        const arcLength = radius * angle;
-        const numPoints = Math.max(Math.floor(arcLength / spacing), 6); // Minimum 6 points pour fluidité
-        
-        for (let i = 0; i <= numPoints; i++) {
-            const t = i / numPoints;
-            const currentAngle = t * angle;
-            
-            // Calculer la position sur l'arc
-            const angleFromCenter = Math.atan2(startPos.z - center.z, startPos.x - center.x) + direction * currentAngle;
-            const x = center.x + radius * Math.cos(angleFromCenter);
-            const z = center.z + radius * Math.sin(angleFromCenter);
-            
-            points.push(new THREE.Vector3(x, 0, z));
-        }
-        
-        return points;
-    }
-      generateHairpinPoints(section, startPos, startDir, spacing) {
-        const points = [];
-        const radius = section.radius || 40;
-        const direction = section.direction === 'left' ? 1 : -1;
-        
-        // Utiliser l'angle variable au lieu d'un angle fixe
-        const angleDeg = section.angle || 160;
-        const angle = Math.min(angleDeg * Math.PI / 180, Math.PI); // Maximum 180°
-        
-        const perpendicular = new THREE.Vector3(-startDir.z, 0, startDir.x).multiplyScalar(direction);
-        const center = startPos.clone().add(perpendicular.multiplyScalar(radius));
-        
-        const arcLength = radius * angle;
-        const numPoints = Math.max(Math.floor(arcLength / spacing), 8); // Minimum 8 points
-        
-        for (let i = 0; i <= numPoints; i++) {
-            const t = i / numPoints;
-            const currentAngle = t * angle;
-            
-            const angleFromCenter = Math.atan2(startPos.z - center.z, startPos.x - center.x) + direction * currentAngle;
-            const x = center.x + radius * Math.cos(angleFromCenter);
-            const z = center.z + radius * Math.sin(angleFromCenter);
-            
-            points.push(new THREE.Vector3(x, 0, z));
-        }
-        
-        return points;
-    }
-    
-    generateChicanePoints(section, startPos, startDir, spacing) {
-        const points = [];
-        const length = section.length || 120;
-        const amplitude = section.amplitude || 30;
-        const direction = section.direction === 'left' ? 1 : -1;
-        
-        const numPoints = Math.floor(length / spacing);
-        const perpendicular = new THREE.Vector3(-startDir.z, 0, startDir.x);
-        
-        for (let i = 0; i <= numPoints; i++) {
-            const t = i / numPoints;
-            const distance = t * length;
-            
-            // Forme sinusoïdale pour la chicane
-            const sideOffset = Math.sin(t * Math.PI * 2) * amplitude * direction;
-            
-            const basePoint = startPos.clone().add(startDir.clone().multiplyScalar(distance));
-            const point = basePoint.add(perpendicular.clone().multiplyScalar(sideOffset));
-            
-            points.push(point);
-        }
-        
-        return points;
-    }
-    
-    generateEssesPoints(section, startPos, startDir, spacing) {
-        const points = [];
-        const length = section.length || 180;
-        const amplitude = 40;
-        const turns = section.turns || 2;
-        const direction = section.direction === 'left' ? 1 : -1;
-        
-        const numPoints = Math.floor(length / spacing);
-        const perpendicular = new THREE.Vector3(-startDir.z, 0, startDir.x);
-        
-        for (let i = 0; i <= numPoints; i++) {
-            const t = i / numPoints;
-            const distance = t * length;
-            
-            // Forme d'esses avec plusieurs virages
-            const sideOffset = Math.sin(t * Math.PI * turns) * amplitude * direction;
-            
-            const basePoint = startPos.clone().add(startDir.clone().multiplyScalar(distance));
-            const point = basePoint.add(perpendicular.clone().multiplyScalar(sideOffset));
-            
-            points.push(point);
-        }
-        
-        return points;
-    }
-      closeCircuit() {
-        if (this.trackPoints.length < 6) return;
-        
-        const startPoint = this.trackPoints[0];
-        const endPoint = this.trackPoints[this.trackPoints.length - 1];
-        const distance = startPoint.distanceTo(endPoint);
-        
-        console.log(`🔄 Fermeture du circuit - Distance à combler: ${distance.toFixed(2)}m`);
-        
-        // Si le circuit n'est pas fermé, créer une transition douce et progressive
-        if (distance > 15) {
-            // Calculer les directions aux extrémités pour une meilleure continuité
-            const endDir = new THREE.Vector3().subVectors(
-                endPoint, 
-                this.trackPoints[this.trackPoints.length - 2]
-            ).normalize();
-            
-            const startDir = new THREE.Vector3().subVectors(
-                this.trackPoints[1], 
-                startPoint
-            ).normalize();
-            
-            // Créer une courbe de Bézier pour une fermeture fluide
-            const numTransitionPoints = Math.max(8, Math.floor(distance / 8));
-            
-            for (let i = 1; i <= numTransitionPoints; i++) {
-                const t = i / (numTransitionPoints + 1);
-                
-                // Points de contrôle pour la courbe de Bézier
-                const control1 = endPoint.clone().add(endDir.clone().multiplyScalar(distance * 0.3));
-                const control2 = startPoint.clone().sub(startDir.clone().multiplyScalar(distance * 0.3));
-                
-                // Interpolation cubique de Bézier
-                const point = new THREE.Vector3();
-                const u = 1 - t;
-                const tt = t * t;
-                const uu = u * u;
-                const uuu = uu * u;
-                const ttt = tt * t;
-                
-                point.addScaledVector(endPoint, uuu);
-                point.addScaledVector(control1, 3 * uu * t);
-                point.addScaledVector(control2, 3 * u * tt);
-                point.addScaledVector(startPoint, ttt);
-                
-                point.y = 0; // Garder Y = 0
-                this.trackPoints.push(point);
+
+    // Spline Catmull-Rom centripète (alpha = 0.5) fermée. Le paramétrage
+    // centripète évite les boucles et les cusps que produit la version uniforme.
+    sampleClosedCatmullRom(points, samplesPerSegment) {
+        const result = [];
+        const n = points.length;
+        const alpha = 0.5;
+
+        for (let i = 0; i < n; i++) {
+            const p0 = points[(i - 1 + n) % n];
+            const p1 = points[i];
+            const p2 = points[(i + 1) % n];
+            const p3 = points[(i + 2) % n];
+
+            const t0 = 0;
+            const t1 = t0 + Math.pow(p0.distanceTo(p1), alpha);
+            const t2 = t1 + Math.pow(p1.distanceTo(p2), alpha);
+            const t3 = t2 + Math.pow(p2.distanceTo(p3), alpha);
+
+            for (let j = 0; j < samplesPerSegment; j++) {
+                const t = t1 + (t2 - t1) * (j / samplesPerSegment);
+                result.push(this.catmullRomPoint(p0, p1, p2, p3, t0, t1, t2, t3, t));
             }
-            
-            console.log(`✅ ${numTransitionPoints} points de transition ajoutés pour fermer le circuit`);
-        } else {
-            console.log('✅ Circuit déjà suffisamment fermé');
         }
-    }smoothTrack() {
-        console.log('🔧 Lissage avancé du circuit pour des transitions fluides...');
-        
-        if (this.trackPoints.length < 10) return;
-        
-        // Paramètres de lissage adaptés au nouveau système
-        const smoothingPasses = 3; // Moins de passes car le tracé est déjà plus naturel
-        const baseSmoothingFactor = 0.15; // Lissage plus doux pour préserver les formes
-        
-        for (let pass = 0; pass < smoothingPasses; pass++) {
-            const smoothingFactor = baseSmoothingFactor * (1 - pass / smoothingPasses * 0.3);
-            const smoothedPoints = [];
-            
-            for (let i = 0; i < this.trackPoints.length; i++) {
-                const current = this.trackPoints[i];
-                
-                // Fenêtre de lissage avec 3 points de chaque côté
-                const window = [];
-                for (let j = -2; j <= 2; j++) {
-                    const idx = (i + j + this.trackPoints.length) % this.trackPoints.length;
-                    window.push(this.trackPoints[idx]);
-                }
-                
-                // Calculer l'angle du virage
-                const prev = this.trackPoints[(i - 1 + this.trackPoints.length) % this.trackPoints.length];
-                const next = this.trackPoints[(i + 1) % this.trackPoints.length];
-                const dir1 = new THREE.Vector3().subVectors(current, prev).normalize();
-                const dir2 = new THREE.Vector3().subVectors(next, current).normalize();
-                const angle = Math.acos(Math.max(-1, Math.min(1, dir1.dot(dir2))));
-                
-                // Appliquer un lissage adaptatif basé sur l'angle
-                const angleStrength = Math.max(0, (Math.PI - angle) / Math.PI);
-                const adaptiveFactor = smoothingFactor + (angleStrength * 0.2);
-                
-                // Lissage gaussien pondéré
-                const weights = [0.1, 0.25, 0.3, 0.25, 0.1]; // Distribution gaussienne
-                let smoothed = new THREE.Vector3();
-                let totalWeight = 0;
-                
-                for (let j = 0; j < window.length; j++) {
-                    const weight = weights[j];
-                    smoothed.add(window[j].clone().multiplyScalar(weight));
-                    totalWeight += weight;
-                }
-                
-                smoothed.divideScalar(totalWeight);
-                
-                // Mélanger avec le point original
-                const finalPoint = current.clone().lerp(smoothed, adaptiveFactor);
-                finalPoint.y = 0; // Garder Y = 0
-                
-                smoothedPoints.push(finalPoint);
-            }
-            
-            this.trackPoints = smoothedPoints;
-        }
-          console.log('✨ Circuit lissé avec des transitions naturelles');
+        return result;
     }
-    
+
+    catmullRomPoint(p0, p1, p2, p3, t0, t1, t2, t3, t) {
+        const lerp = (A, B, s) => A.clone().multiplyScalar(1 - s).add(B.clone().multiplyScalar(s));
+        const a1 = lerp(p0, p1, (t - t0) / (t1 - t0));
+        const a2 = lerp(p1, p2, (t - t1) / (t2 - t1));
+        const a3 = lerp(p2, p3, (t - t2) / (t3 - t2));
+        const b1 = lerp(a1, a2, (t - t0) / (t2 - t0));
+        const b2 = lerp(a2, a3, (t - t1) / (t3 - t1));
+        const c = lerp(b1, b2, (t - t1) / (t2 - t1));
+        c.y = 0;
+        return c;
+    }
+
+    // Rééchantillonne une polyligne fermée à pas d'arc constant.
+    resampleByArcLength(points, spacing) {
+        const n = points.length;
+        let total = 0;
+        for (let i = 0; i < n; i++) {
+            total += points[i].distanceTo(points[(i + 1) % n]);
+        }
+
+        const count = Math.max(20, Math.round(total / spacing));
+        const step = total / count;
+        const result = [points[0].clone()];
+
+        let segIdx = 0;
+        let distInSeg = 0;
+        let segLen = points[0].distanceTo(points[1 % n]);
+
+        for (let i = 1; i < count; i++) {
+            let remaining = step;
+            while (remaining > segLen - distInSeg) {
+                remaining -= (segLen - distInSeg);
+                segIdx = (segIdx + 1) % n;
+                distInSeg = 0;
+                segLen = points[segIdx].distanceTo(points[(segIdx + 1) % n]);
+            }
+            distInSeg += remaining;
+            const a = points[segIdx];
+            const b = points[(segIdx + 1) % n];
+            const t = segLen > 0 ? distInSeg / segLen : 0;
+            const p = new THREE.Vector3().lerpVectors(a, b, t);
+            p.y = 0;
+            result.push(p);
+        }
+        return result;
+    }
+
     createTrackGeometry() {
         const trackGeometry = new THREE.BufferGeometry();
         const positions = [];
@@ -502,10 +238,13 @@ class Track {    constructor(game = null) {
                 dash.position.y = 0.01; // Légèrement au-dessus de la piste
                 dash.rotation.x = -Math.PI / 2;
                 
-                // Orienter le tiret selon la direction de la piste
+                // Orienter le tiret selon la direction de la piste. Le plan est
+                // d'abord couché (rotation.x = -90°) ; avec l'ordre d'Euler XYZ
+                // la rotation.z s'applique APRÈS et l'axe Z est inversé, d'où le
+                // signe négatif pour aligner réellement le tiret sur la route.
                 const direction = new THREE.Vector3().subVectors(endPos, startPos);
                 const angle = Math.atan2(direction.z, direction.x);
-                dash.rotation.z = angle;
+                dash.rotation.z = -angle;
                 
                 centerLineGroup.add(dash);
             }
@@ -566,7 +305,7 @@ class Track {    constructor(game = null) {
         }
         
         // Utiliser les premiers points du circuit (qui correspondent à la ligne droite de départ)
-        const startIndex = Math.floor(this.trackPoints.length * 0.1); // 10% du circuit
+        const startIndex = 0; // début réel du circuit
         const startPoint = this.trackPoints[startIndex];
         const nextPoint = this.trackPoints[startIndex + 1];
 
@@ -579,8 +318,10 @@ class Track {    constructor(game = null) {
         // Largeur de la ligne (même largeur que la piste)
         const trackWidth = 36;
         
-        // Créer la ligne de départ/arrivée (une seule ligne pour les deux fonctions)
-        this.createStartFinishLineVisual(startPoint, direction, trackWidth);
+        // Créer la ligne de départ/arrivée (une seule ligne pour les deux
+        // fonctions). On passe la PERPENDICULAIRE : la bande doit traverser la
+        // route, pas la suivre.
+        this.createStartFinishLineVisual(startPoint, perpendicular, trackWidth);
 
         // Créer des drapeaux à damier
         this.createCheckeredFlags(startPoint, perpendicular, trackWidth);
@@ -617,8 +358,10 @@ class Track {    constructor(game = null) {
         this.startLine.position.y = 0.02; // Légèrement au-dessus de la piste
         this.startLine.rotation.x = -Math.PI / 2;
         
-        // Orienter la ligne perpendiculairement à la direction de la piste
-        const angle = Math.atan2(perpendicular.z, perpendicular.x);
+        // Orienter la bande le long de la perpendiculaire (en travers de la
+        // route). Plan couché + ordre d'Euler XYZ inversent l'axe Z, d'où le
+        // -perpendicular.z (même correction que pour les tirets médians).
+        const angle = Math.atan2(-perpendicular.z, perpendicular.x);
         this.startLine.rotation.z = angle;
     }
 
@@ -709,7 +452,7 @@ class Track {    constructor(game = null) {
             return new THREE.Vector3(0, 0.5, 0);
         }
         
-        const startIndex = Math.floor(this.trackPoints.length * 0.1); // Même position que la ligne de départ
+        const startIndex = 0; // même position que la ligne de départ
         const startPoint = this.trackPoints[startIndex];
         const direction = new THREE.Vector3().subVectors(this.trackPoints[startIndex + 1], startPoint).normalize();
         const perpendicular = new THREE.Vector3(-direction.z, 0, direction.x);
@@ -725,8 +468,18 @@ class Track {    constructor(game = null) {
         position.y = 0.5;
         
         console.log(`🏎️ Kart ${index} positionné sur la ligne de départ`);
-        
+
         return position;
+    }
+
+    // Cap (en radians) aligné sur la route au départ. Le vecteur avant d'un kart
+    // est (sin(rotation), 0, cos(rotation)), donc pour suivre la direction d on
+    // pose rotation = atan2(d.x, d.z).
+    getStartRotation() {
+        if (this.trackPoints.length < 2) return 0;
+        const direction = new THREE.Vector3()
+            .subVectors(this.trackPoints[1], this.trackPoints[0]).normalize();
+        return Math.atan2(direction.x, direction.z);
     }
       getTerrainHeight(x, z) {
         // Pour un terrain plat, retourner 0
@@ -974,7 +727,7 @@ class Track {    constructor(game = null) {
         // Avec le nouveau système, utiliser la position de la ligne de départ
         if (this.trackPoints.length < 20) return false;
         
-        const startIndex = Math.floor(this.trackPoints.length * 0.1);
+        const startIndex = 0;
         const startLineCenter = this.trackPoints[startIndex];
         const distance = kartPosition.distanceTo(startLineCenter);
         
@@ -1137,8 +890,8 @@ class Track {    constructor(game = null) {
         this.checkpointMeshes = [];
         this.centerLine = null;
         
-        // Régénérer tous les éléments
-        this.generateTrackPoints();
+        // Régénérer tous les éléments (même chemin validé que create())
+        this.generateHighQualityTrackPoints();
         this.createTrackGeometry();
         this.generateTrees();
         this.createStartLine();
@@ -1147,97 +900,6 @@ class Track {    constructor(game = null) {
         console.log('✅ Nouveau circuit généré avec système anti-raccourcis !');
     }
 
-    // Méthode pour détecter et corriger les transitions trop abruptes
-    validateAndFixSharpTransitions() {
-        if (this.trackPoints.length < 6) return;
-        
-        console.log('🔧 Détection et correction des transitions abruptes...');
-        
-        const maxAngleChange = Math.PI / 3; // 60° maximum entre segments consécutifs
-        let fixedTransitions = 0;
-        
-        for (let i = 2; i < this.trackPoints.length - 2; i++) {
-            const prev = this.trackPoints[i - 1];
-            const current = this.trackPoints[i];
-            const next = this.trackPoints[i + 1];
-            
-            // Calculer les directions
-            const dir1 = new THREE.Vector3().subVectors(current, prev).normalize();
-            const dir2 = new THREE.Vector3().subVectors(next, current).normalize();
-            
-            // Calculer l'angle entre les directions
-            const angle = Math.acos(Math.max(-1, Math.min(1, dir1.dot(dir2))));
-            
-            // Si l'angle est trop serré, lisser la transition
-            if (angle > maxAngleChange) {
-                // Interpoler entre les points adjacents pour adoucir la transition
-                const smoothFactor = 0.3;
-                const before = this.trackPoints[i - 2];
-                const after = this.trackPoints[i + 2];
-                
-                // Calculer une position lissée
-                const smoothedPos = new THREE.Vector3();
-                smoothedPos.addScaledVector(before, 0.1);
-                smoothedPos.addScaledVector(prev, 0.2);
-                smoothedPos.addScaledVector(current, 0.4);
-                smoothedPos.addScaledVector(next, 0.2);
-                smoothedPos.addScaledVector(after, 0.1);
-                
-                // Appliquer le lissage
-                this.trackPoints[i].lerp(smoothedPos, smoothFactor);
-                this.trackPoints[i].y = 0; // Garder Y = 0
-                
-                fixedTransitions++;
-            }
-        }
-        
-        if (fixedTransitions > 0) {
-            console.log(`✅ ${fixedTransitions} transitions abruptes corrigées`);
-        }
-    }
-    
-    // Méthode pour valider les distances minimum entre points
-    validateMinimumSegmentLengths() {
-        if (this.trackPoints.length < 3) return;
-        
-        console.log('🔧 Validation des longueurs de segments...');
-        
-        const minSegmentLength = 8; // Distance minimum entre points
-        let removedPoints = 0;
-        const validatedPoints = [this.trackPoints[0]]; // Toujours garder le premier point
-        
-        for (let i = 1; i < this.trackPoints.length; i++) {
-            const lastValidPoint = validatedPoints[validatedPoints.length - 1];
-            const currentPoint = this.trackPoints[i];
-            const distance = lastValidPoint.distanceTo(currentPoint);
-            
-            // Ne garder le point que s'il est suffisamment éloigné du précédent
-            if (distance >= minSegmentLength) {
-                validatedPoints.push(currentPoint);
-            } else {
-                removedPoints++;
-            }
-        }
-        
-        // Vérifier la distance entre le dernier et le premier point
-        if (validatedPoints.length > 2) {
-            const lastPoint = validatedPoints[validatedPoints.length - 1];
-            const firstPoint = validatedPoints[0];
-            const closingDistance = lastPoint.distanceTo(firstPoint);
-            
-            if (closingDistance < minSegmentLength && validatedPoints.length > 3) {
-                validatedPoints.pop(); // Supprimer le dernier point s'il est trop proche du premier
-                removedPoints++;
-            }
-        }
-        
-        this.trackPoints = validatedPoints;
-        
-        if (removedPoints > 0) {
-            console.log(`✅ ${removedPoints} points trop proches supprimés - ${this.trackPoints.length} points conservés`);
-        }
-    }
-    
     // Méthode de diagnostic pour analyser la qualité du circuit
     diagnoseTrackQuality() {
         if (this.trackPoints.length < 10) return;
@@ -1295,42 +957,122 @@ class Track {    constructor(game = null) {
         
         return { qualityScore, sharpAngles, minSegmentLength, avgSegmentLength, totalLength };
     }
-    // Génération avec retry automatique en cas de qualité insuffisante
-    generateHighQualityTrackPoints(maxAttempts = 3) {
-        console.log('🎯 Génération d\'un circuit de haute qualité...');
-        
-        let bestTrackPoints = null;
-        let bestQualityScore = 0;
-        let attempts = 0;
-        
-        while (attempts < maxAttempts) {
-            attempts++;
-            console.log(`🔄 Tentative ${attempts}/${maxAttempts}...`);
-            
-            // Générer un circuit
+    // Génération avec validation. On génère plusieurs candidats et on garde le
+    // plus INTÉRESSANT (virages cumulés max) parmi ceux qui sont valides — pas
+    // simplement le premier valide, qui est souvent le plus plat. Un circuit est
+    // valide s'il ne se croise pas et si aucun virage n'est trop serré pour la
+    // largeur de piste (sinon le ruban se pince).
+    generateHighQualityTrackPoints(maxAttempts = 50) {
+        console.log('🎯 Génération d\'un circuit valide et intéressant...');
+        const minAllowedRadius = 22; // > demi-largeur de piste (~18) : autorise les épingles
+
+        let bestValid = null;
+        let bestValidTurning = -Infinity;
+        let bestFallback = null;
+        let bestFallbackScore = -Infinity;
+        let validCount = 0;
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             this.generateTrackPoints();
-            
-            // Évaluer la qualité
-            const diagnosis = this.diagnoseTrackQuality();
-            
-            if (diagnosis.qualityScore >= 80) {
-                console.log(`✅ Circuit de haute qualité obtenu en ${attempts} tentative(s) !`);
-                return; // On garde ce circuit
-            }
-            
-            // Sauvegarder le meilleur circuit trouvé jusqu'à présent
-            if (diagnosis.qualityScore > bestQualityScore) {
-                bestQualityScore = diagnosis.qualityScore;
-                bestTrackPoints = [...this.trackPoints];
+
+            const selfIntersects = this.hasSelfIntersection();
+            const minRadius = this.getMinCurvatureRadius();
+
+            if (!selfIntersects && minRadius >= minAllowedRadius) {
+                validCount++;
+                // Parmi les circuits valides, préférer celui qui tourne le plus
+                // (plus de virages = plus technique).
+                const turning = this.getTotalTurning();
+                if (turning > bestValidTurning) {
+                    bestValidTurning = turning;
+                    bestValid = this.trackPoints.map(p => p.clone());
+                }
+            } else {
+                // Garder un repli au cas où aucun candidat valide n'émerge.
+                const score = (selfIntersects ? -1000 : 0) + Math.min(minRadius, minAllowedRadius);
+                if (score > bestFallbackScore) {
+                    bestFallbackScore = score;
+                    bestFallback = this.trackPoints.map(p => p.clone());
+                }
             }
         }
-        
-        // Si aucun circuit de haute qualité n'a été trouvé, utiliser le meilleur
-        if (bestTrackPoints) {
-            this.trackPoints = bestTrackPoints;
-            console.log(`⚠️ Utilisation du meilleur circuit trouvé (score: ${bestQualityScore.toFixed(0)}/100)`);
-        } else {
-            console.log('⚠️ Conservation du dernier circuit généré malgré la qualité insuffisante');
+
+        if (bestValid) {
+            this.trackPoints = bestValid;
+            console.log(`✅ Circuit retenu sur ${validCount} candidats valides (virages cumulés ${bestValidTurning.toFixed(1)} rad)`);
+        } else if (bestFallback) {
+            this.trackPoints = bestFallback;
+            console.warn(`⚠️ Aucun circuit parfait — meilleur repli conservé (score ${bestFallbackScore.toFixed(1)})`);
         }
+        this.diagnoseTrackQuality();
+    }
+
+    // Somme des changements de cap absolus le long de la boucle (un cercle vaut
+    // 2π ≈ 6.28 ; plus la valeur est élevée, plus le circuit enchaîne de virages).
+    getTotalTurning() {
+        const pts = this.trackPoints;
+        const n = pts.length;
+        let turning = 0;
+        for (let i = 0; i < n; i++) {
+            const a = pts[(i - 1 + n) % n];
+            const b = pts[i];
+            const c = pts[(i + 1) % n];
+            const d1x = b.x - a.x, d1z = b.z - a.z;
+            const d2x = c.x - b.x, d2z = c.z - b.z;
+            const cross = d1x * d2z - d1z * d2x;
+            const dot = d1x * d2x + d1z * d2z;
+            turning += Math.abs(Math.atan2(cross, dot));
+        }
+        return turning;
+    }
+
+    // Test de croisement de la boucle (segment-segment dans le plan XZ).
+    hasSelfIntersection() {
+        const pts = this.trackPoints;
+        const n = pts.length;
+        for (let i = 0; i < n; i++) {
+            const a1 = pts[i];
+            const a2 = pts[(i + 1) % n];
+            for (let j = i + 2; j < n; j++) {
+                // Ignorer les segments adjacents (dont la paire début/fin).
+                if (i === 0 && j === n - 1) continue;
+                const b1 = pts[j];
+                const b2 = pts[(j + 1) % n];
+                if (this.segmentsIntersect(a1, a2, b1, b2)) return true;
+            }
+        }
+        return false;
+    }
+
+    segmentsIntersect(p1, p2, p3, p4) {
+        const cross = (a, b, c) => (b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x);
+        const d1 = cross(p3, p4, p1);
+        const d2 = cross(p3, p4, p2);
+        const d3 = cross(p1, p2, p3);
+        const d4 = cross(p1, p2, p4);
+        return (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
+                ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0)));
+    }
+
+    // Plus petit rayon de courbure le long de la boucle (cercle circonscrit
+    // à trois points consécutifs).
+    getMinCurvatureRadius() {
+        const pts = this.trackPoints;
+        const n = pts.length;
+        let minR = Infinity;
+        for (let i = 0; i < n; i++) {
+            const r = this.circumRadius(pts[(i - 1 + n) % n], pts[i], pts[(i + 1) % n]);
+            if (r < minR) minR = r;
+        }
+        return minR;
+    }
+
+    circumRadius(a, b, c) {
+        const ab = a.distanceTo(b);
+        const bc = b.distanceTo(c);
+        const ca = c.distanceTo(a);
+        const area = Math.abs((b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x)) / 2;
+        if (area < 1e-6) return Infinity; // points colinéaires = ligne droite
+        return (ab * bc * ca) / (4 * area);
     }
 }
