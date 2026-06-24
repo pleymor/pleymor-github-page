@@ -9,7 +9,11 @@ class RainManager {
         this.rainIntensity = 1000; // Nombre de gouttes de pluie
         this.rainArea = 200; // Zone couverte par la pluie
         this.rainSpeed = 0.5; // Vitesse de chute de la pluie
-        
+
+        // Météo dynamique : le temps change tout seul au fil de la course.
+        this.weatherStarted = false;
+        this.weatherTimer = 0; // en frames (simulation à 60 Hz)
+
         this.init();
     }
 
@@ -90,17 +94,44 @@ class RainManager {
         }
     }
 
+    // Démarre la météo dynamique au lancement de la course (état initial aléatoire).
+    startWeather() {
+        this.weatherStarted = true;
+        this.scheduleNextWeather(true);
+    }
+
+    // Programme la prochaine bascule météo et choisit le temps de la période.
+    scheduleNextWeather(initial = false) {
+        const minSec = 12, maxSec = 28;
+        this.weatherTimer = (minSec + Math.random() * (maxSec - minSec)) * 60;
+
+        // Probabilité de pluie : modérée au départ, un peu moins de chance de
+        // continuer à pleuvoir que de rester sec (le beau temps domine).
+        const chance = initial ? 0.35 : (this.rainEnabled ? 0.3 : 0.45);
+        if (Math.random() < chance) {
+            this.enable();
+        } else {
+            this.disable();
+        }
+    }
+
     update() {
+        // Météo dynamique : décompte puis bascule aléatoire (pendant la course).
+        if (this.weatherStarted) {
+            this.weatherTimer--;
+            if (this.weatherTimer <= 0) this.scheduleNextWeather();
+        }
+
         if (!this.rainEnabled || !this.rainParticles) return;
-        
+
         const positions = this.rainGeometry.attributes.position.array;
         const velocities = this.rainGeometry.attributes.velocity.array;
-        
+
         // Obtenir la position du joueur pour centrer la pluie
         let playerX = 0, playerZ = 0;
-        if (this.game.playerKart && this.game.playerKart.mesh) {
-            playerX = this.game.playerKart.mesh.position.x;
-            playerZ = this.game.playerKart.mesh.position.z;
+        if (this.game.playerKart && this.game.playerKart.position) {
+            playerX = this.game.playerKart.position.x;
+            playerZ = this.game.playerKart.position.z;
         }
         
         for (let i = 0; i < this.rainIntensity; i++) {
