@@ -128,6 +128,8 @@ class Game {
 
     startGame() {
         this.applyEngineClass();
+        // Lancer la météo dynamique (état initial aléatoire, évolue en course).
+        this.rainManager.startWeather();
         this.uiManager.hideStartScreen();
         this.uiManager.showGameUI();
 
@@ -175,14 +177,14 @@ class Game {
         
         const time = Date.now() * 0.001; // Current time in seconds
         const cameraPosition = this.camera.position;
-        const isRaining = this.rainManager && this.rainManager.isRaining;
-        
+        const isRaining = !!(this.rainManager && this.rainManager.rainEnabled);
+
         // Update global shader uniforms
         this.shaderManager.updateUniforms(time, cameraPosition, isRaining);
-        
-        // Update track shader uniforms
+
+        // Update track shader uniforms (humidité de piste pilotée par la pluie)
         if (this.track) {
-            this.track.updateShaders();
+            this.track.updateShaders(time, this.camera, isRaining);
         }
     }updateCamera() {
         if (!this.playerKart) return;
@@ -325,14 +327,21 @@ class Game {
         this.playerLaps = 0;
         this.aiLaps = [0, 0, 0];
         
-        // Remettre à zéro la progression sur le circuit
+        // Remettre à zéro la progression sur le circuit (y compris les tours,
+        // dont dépend le calcul de position).
         if (this.playerKart) {
             this.playerKart.trackProgress = 0;
             this.playerKart.lastCheckpoint = 0;
+            this.playerKart.laps = 0;
+            this.playerKart.currentLapCheckpoints.clear();
+            this.playerKart.passedCheckpoints = [];
         }
         this.aiKarts.forEach(kart => {
             kart.trackProgress = 0;
             kart.lastCheckpoint = 0;
+            kart.laps = 0;
+            kart.currentLapCheckpoints.clear();
+            kart.passedCheckpoints = [];
         });
         
         // Mettre à jour la minimap

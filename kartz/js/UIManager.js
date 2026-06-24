@@ -14,7 +14,6 @@ class UIManager {
         this.isPaused = false;        // Boutons de contrôle dans le menu pause
         this.musicToggle = document.getElementById('musicToggle');
         this.volumeSlider = document.getElementById('volumeSlider');
-        this.rainToggle = document.getElementById('rainToggle');
         this.regenerateTrackButton = document.getElementById('regenerateTrackButton');
 
         // Minimap elements
@@ -71,11 +70,6 @@ class UIManager {
         if (this.musicToggle) {
             this.musicToggle.addEventListener('click', () => {
                 this.toggleMusic();
-            });
-        }        // Bouton de contrôle de la pluie dans le menu pause
-        if (this.rainToggle) {
-            this.rainToggle.addEventListener('click', () => {
-                this.toggleRain();
             });
         }
 
@@ -175,7 +169,9 @@ class UIManager {
         // Mettre à jour le compteur de tours
         const lapCountElement = document.getElementById('lapCount');
         if (lapCountElement) {
-            lapCountElement.textContent = `${this.game.getPlayerLaps()}/3`;
+            // Afficher le tour EN COURS (1/3 au départ), pas les tours complétés.
+            const currentLap = Math.min(this.game.getPlayerLaps() + 1, 3);
+            lapCountElement.textContent = `${currentLap}/3`;
         }
 
         // Mettre à jour la vitesse
@@ -185,13 +181,16 @@ class UIManager {
             speedElement.textContent = speed;
         }
 
-        // Calculer et afficher la position (simple pour le moment)
-        let position = 1;
-        const playerProgress = playerKart.trackProgress;
+        // Calculer la position selon la progression TOTALE (tours + index sur la
+        // piste). Sans les tours, l'index repasse à ~0 en franchissant la ligne
+        // et le joueur tomberait dernier à chaque tour.
+        const trackLength = this.game.getTrack().getTrackPoints().length || 1;
+        const totalProgress = (kart) => kart.laps * trackLength + kart.trackProgress;
+        const playerProgress = totalProgress(playerKart);
 
+        let position = 1;
         this.game.aiKarts.forEach(aiKart => {
-            const aiProgress = aiKart.trackProgress;
-            if (aiProgress > playerProgress) {
+            if (totalProgress(aiKart) > playerProgress) {
                 position++;
             }
         });
@@ -240,14 +239,6 @@ class UIManager {
         const isEnabled = this.game.audioManager.toggleTheMusic();
         if (this.musicToggle) {
             this.musicToggle.innerHTML = isEnabled ? '🔇 Désactiver Musique' : '🔊 Activer Musique';
-        }
-    }    toggleRain() {
-        if (this.game.rainManager) {
-            this.game.rainManager.toggle();
-            const isEnabled = this.game.rainManager.rainEnabled;
-            if (this.rainToggle) {
-                this.rainToggle.innerHTML = isEnabled ? '🌤️ Désactiver Pluie' : '🌧️ Activer Pluie';
-            }
         }
     }    async regenerateTrack() {
         // Désactiver temporairement le bouton pour éviter les clics multiples
