@@ -22,6 +22,8 @@ class Track {    constructor(game = null) {
         this.createStartLine();
         // Générer les checkpoints après avoir créé le circuit
         this.generateCheckpoints();
+        // Générer les flaques (visibles uniquement sous la pluie)
+        this.generatePuddles();
     }generateTrackPoints() {
         console.log('🏁 Génération d\'un circuit fermé fluide...');
         this.trackPoints = [];
@@ -420,7 +422,49 @@ class Track {    constructor(game = null) {
             
             this.flags.push(flagGroup);
         });
-    }    addToScene(scene) {
+    }
+
+    // Génère des flaques d'eau réparties sur la piste. Invisibles par défaut :
+    // leur opacité est pilotée par l'humidité (voir updateShaders).
+    generatePuddles() {
+        this.puddles = [];
+        const n = this.trackPoints.length;
+        if (n < 10) return;
+
+        const count = 14 + Math.floor(Math.random() * 8); // 14-21 flaques
+        for (let k = 0; k < count; k++) {
+            const i = Math.floor(Math.random() * n);
+            const p = this.trackPoints[i];
+            const next = this.trackPoints[(i + 1) % n];
+            const dir = new THREE.Vector3().subVectors(next, p).normalize();
+            const perp = new THREE.Vector3(-dir.z, 0, dir.x);
+
+            // Décalage latéral dans la largeur de piste (marge pour rester dessus).
+            const pos = p.clone().add(perp.multiplyScalar((Math.random() - 0.5) * 26));
+
+            const radius = 2.5 + Math.random() * 4;
+            const geo = new THREE.CircleGeometry(radius, 16);
+            const mat = new THREE.MeshBasicMaterial({
+                color: 0x1b2a38,
+                transparent: true,
+                opacity: 0,
+                depthWrite: false
+            });
+            const puddle = new THREE.Mesh(geo, mat);
+            puddle.position.set(pos.x, 0.03, pos.z); // au-dessus du bitume
+            puddle.rotation.x = -Math.PI / 2;        // à plat
+            puddle.rotation.z = Math.random() * Math.PI;
+            puddle.scale.set(1, 0.6 + Math.random() * 0.6, 1); // forme d'ellipse
+            puddle.visible = false;
+            puddle.userData.maxOpacity = 0.35 + Math.random() * 0.25;
+            puddle.userData.threshold = Math.random() * 0.4; // apparaît à partir d'un certain niveau d'humidité
+
+            this.puddles.push(puddle);
+        }
+        console.log(`💧 ${this.puddles.length} flaques générées`);
+    }
+
+    addToScene(scene) {
         if (this.trackMesh) scene.add(this.trackMesh);
         if (this.terrainMesh) scene.add(this.terrainMesh);
         if (this.baseMesh) scene.add(this.baseMesh);
@@ -440,7 +484,12 @@ class Track {    constructor(game = null) {
         if (this.checkpointMeshes) {
             this.checkpointMeshes.forEach(checkpoint => scene.add(checkpoint));
         }
-        
+
+        // Ajouter les flaques d'eau
+        if (this.puddles) {
+            this.puddles.forEach(puddle => scene.add(puddle));
+        }
+
         // Ajouter les arbres à la scène
         this.trees.forEach(tree => {
             scene.add(tree.group);
@@ -968,7 +1017,19 @@ class Track {    constructor(game = null) {
             if (this.trackMesh && this.trackMesh.material.uniforms) {
                 this.trackMesh.material.uniforms.wetness.value = this.wetness;
             }
-            
+
+            // Faire apparaître/disparaître les flaques selon l'humidité.
+            if (this.puddles) {
+                for (const puddle of this.puddles) {
+                    const t = puddle.userData.threshold;
+                    const opacity = this.wetness <= t
+                        ? 0
+                        : ((this.wetness - t) / (1 - t)) * puddle.userData.maxOpacity;
+                    puddle.material.opacity = opacity;
+                    puddle.visible = opacity > 0.01;
+                }
+            }
+
             // Update all shader uniforms
             this.shaderManager.updateUniforms(time, camera);
         }
@@ -986,13 +1047,15 @@ class Track {    constructor(game = null) {
         this.checkpoints = [];
         this.checkpointMeshes = [];
         this.centerLine = null;
-        
+        this.puddles = [];
+
         // Régénérer tous les éléments (même chemin validé que create())
         this.generateHighQualityTrackPoints();
         this.createTrackGeometry();
         this.generateTrees();
         this.createStartLine();
         this.generateCheckpoints();
+        this.generatePuddles();
         
         console.log('✅ Nouveau circuit généré avec système anti-raccourcis !');
     }

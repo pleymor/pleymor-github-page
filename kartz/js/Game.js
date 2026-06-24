@@ -297,6 +297,7 @@ class Game {
         if (t.centerLine) this.scene.remove(t.centerLine);
         if (t.flags) t.flags.forEach(flag => this.scene.remove(flag));
         if (t.checkpointMeshes) t.checkpointMeshes.forEach(cp => this.scene.remove(cp));
+        if (t.puddles) t.puddles.forEach(puddle => this.scene.remove(puddle));
         if (t.trees) t.trees.forEach(tree => this.scene.remove(tree.group));
     }
 
