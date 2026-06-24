@@ -10,18 +10,25 @@ class Kart {    constructor(color, isPlayer = false, game) {
         this.deceleration = 0.025;
         this.mixTurnSpeed = 0.50;
         this.maxTurnSpeed = 0.30;
-        this.traction = 0.95;
+        // traction = fraction de vitesse LATÉRALE conservée par frame.
+        // Plus bas = plus d'adhérence (le glissement latéral est tué plus vite).
+        this.traction = 0.80;
 
         // Propriétés de l'environnement
         this.friction = 0.95;
         this.airResistance = 0.99;
-        this.driftFactor = 0.08;        // Variables de position et de mouvement
+        this.driftFactor = 0.04;        // Variables de position et de mouvement
         this.position = new THREE.Vector3();
         this.velocity = new THREE.Vector3();
         this.rotation = 0;
         this.speed = 0;
         this.turnSpeed = 0;
         this.onGrass = false; // Hors-piste : ralentissement + particules
+        // Collision : rayon (karts ~3.8 de long après mise à l'échelle), vélocité
+        // de choc persistante (knockback) et facteur de ré-accélération.
+        this.collisionRadius = 1.8;
+        this.externalVelocity = new THREE.Vector3(); // knockback, décroît dans le temps
+        this.bumpRecovery = 1; // 0..1 : bride l'accélération après un choc
         this.laps = 0;
         this.trackProgress = 0;
         this.lastCheckpoint = 0;
@@ -146,7 +153,10 @@ class Kart {    constructor(color, isPlayer = false, game) {
         rearBumper.castShadow = true;
         this.group.add(rearBumper);
 
-        // === Roues (chaque roue est un sous-groupe qui tourne entièrement) ===
+        // === Roues ===
+        // Hiérarchie : `wheel` (moyeu) porte le BRAQUAGE (rotation.y), et un
+        // `spinner` interne porte le ROULEMENT (rotation.x). Séparer les deux
+        // évite la précession/vibration quand une roue avant roule ET braque.
         this.wheels = [];
         const tireMat = mat(new THREE.Color(0x1b1b1b));
         const rimMat = mat(new THREE.Color(0xd0d0d0));
@@ -155,25 +165,28 @@ class Kart {    constructor(color, isPlayer = false, game) {
             [-0.85, 0, -1.05], [0.85, 0, -1.05]  // arrière
         ];
         wheelPositions.forEach((pos) => {
-            const wheel = new THREE.Group();
+            const wheel = new THREE.Group();   // moyeu : braquage
+            const spinner = new THREE.Group(); // roulement
 
             const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.32, 18), tireMat);
             tire.rotation.z = Math.PI / 2; // axe le long de X
             tire.castShadow = true;
-            wheel.add(tire);
+            spinner.add(tire);
 
             const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.34, 12), rimMat);
             rim.rotation.z = Math.PI / 2;
-            wheel.add(rim);
+            spinner.add(rim);
 
             // Rayons (barres dans le plan de la roue)
             for (let i = 0; i < 4; i++) {
                 const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.42, 0.05), rimMat);
                 spoke.rotation.x = (i / 4) * Math.PI;
-                wheel.add(spoke);
+                spinner.add(spoke);
             }
 
+            wheel.add(spinner);
             wheel.position.set(pos[0], pos[1], pos[2]);
+            wheel.userData.spinner = spinner; // référence pour le roulement
             this.group.add(wheel);
             this.wheels.push(wheel);
         });
@@ -330,7 +343,8 @@ class Kart {    constructor(color, isPlayer = false, game) {
             if (this.speed < this.maxSpeed) {
                 // Courbe plus équilibrée - progression rapide puis ralentissement
                 const speedFactor = Math.pow(1 - (this.speed / this.maxSpeed), 2)
-                const addedSpeed = this.acceleration * speedFactor;
+                // bumpRecovery bride l'accélération après un choc (ré-accélération lente).
+                const addedSpeed = this.acceleration * speedFactor * this.bumpRecovery;
 
                 this.speed = Math.max(this.speed + addedSpeed, 0);
                 console.log(`🚀 Speed increased from ${initialSpeed.toFixed(2)} to ${this.speed.toFixed(2)} (added: ${addedSpeed.toFixed(3)})`);
@@ -348,19 +362,24 @@ class Kart {    constructor(color, isPlayer = false, game) {
 
         this.steerInput = 0;
 
+        // Autorité de direction : plancher élevé à basse vitesse pour bien
+        // tourner après un freinage (avant, ∝ vitesse, donc quasi nulle à
+        // l'arrêt). Atteint l'autorité pleine dès ~20 % de la vitesse max.
+        const steerAuthority = Math.min(1, 0.45 + speedNorm * 2.5);
+
         // Enhanced steering with analog joystick support
         if (inputs.joystickX && Math.abs(inputs.joystickX) > 0.1 && Math.abs(this.speed) > 0.02) {
             // Use analog joystick input for smooth steering
-            this.steerInput = -inputs.joystickX * speedNorm * (this.speed > 0 ? 1 : -1) * 0.8;
+            this.steerInput = -inputs.joystickX * steerAuthority * (this.speed > 0 ? 1 : -1) * 0.8;
             console.log(`🕹️ Joystick steering: ${this.steerInput.toFixed(3)} (joystickX: ${inputs.joystickX.toFixed(2)})`);
         } else {
             // Fallback to digital input (keyboard/discrete touch)
             if (inputs.left && Math.abs(this.speed) > 0.02) {
-                this.steerInput = speedNorm * (this.speed > 0 ? 1 : -1) * 0.7;
+                this.steerInput = steerAuthority * (this.speed > 0 ? 1 : -1) * 0.7;
                 console.log(`⬅️ Left steering: ${this.steerInput.toFixed(3)}`);
             }
             if (inputs.right && Math.abs(this.speed) > 0.02) {
-                this.steerInput = -speedNorm * (this.speed > 0 ? 1 : -1) * 0.7;
+                this.steerInput = -steerAuthority * (this.speed > 0 ? 1 : -1) * 0.7;
                 console.log(`➡️ Right steering: ${this.steerInput.toFixed(3)}`);
             }
         }
@@ -386,9 +405,9 @@ class Kart {    constructor(color, isPlayer = false, game) {
                 this.startDriftEffects();
             }
         } else {
-            // Mode normal - restaurer les valeurs par défaut
-            this.traction = 0.95;
-            this.driftFactor = 0.08;
+            // Mode normal - restaurer les valeurs par défaut (adhérence mordante)
+            this.traction = 0.80;
+            this.driftFactor = 0.04;
 
             // Désactiver les effets de dérapage
             if (this.isDrifting) {
@@ -454,7 +473,7 @@ class Kart {    constructor(color, isPlayer = false, game) {
         // Accélération avec courbe progressive comme pour le joueur
         if (this.speed < this.maxSpeed) {
             const speedFactor = Math.pow(1 - (this.speed / this.maxSpeed), 2);
-            const addedSpeed = this.acceleration * speedFactor * 0.7; // Légèrement plus lent que le joueur
+            const addedSpeed = this.acceleration * speedFactor * 0.7 * this.bumpRecovery; // bridé après un choc
             this.speed = Math.min(this.speed + addedSpeed, this.maxSpeed);
         }
 
@@ -532,109 +551,122 @@ class Kart {    constructor(color, isPlayer = false, game) {
         const maxVelocityMagnitude = this.maxSpeed * 1.8;
         if (this.velocity.length() > maxVelocityMagnitude) {
             this.velocity.normalize().multiplyScalar(maxVelocityMagnitude);
-        }        // Vérifier les collisions avant de mettre à jour la position
-        const newPosition = this.position.clone().add(this.velocity);
+        }
 
-        // Collision avec les arbres
-        const collidedTree = this.game.getTrack().checkTreeCollision(newPosition, 1.5);
+        // Décroissance du knockback (choc) et récupération progressive de l'accélération.
+        this.externalVelocity.multiplyScalar(0.88);
+        if (this.externalVelocity.lengthSq() < 1e-5) this.externalVelocity.set(0, 0, 0);
+        this.bumpRecovery = Math.min(1, this.bumpRecovery + 0.018); // ~1 s pour revenir de 0 à 1
 
-        // Collision avec les autres karts
-        const collidedKart = this.checkKartCollision(newPosition, 1.8);
+        // Déplacement = vitesse moteur + knockback persistant.
+        const move = this.velocity.clone().add(this.externalVelocity);
+        const newPosition = this.position.clone().add(move);
 
+        // Collision avec les arbres (avant de bouger : on n'entre pas dans l'arbre)
+        const collidedTree = this.game.getTrack().checkTreeCollision(newPosition, this.collisionRadius);
         if (collidedTree) {
-            // Collision avec un arbre
-            const collisionDirection = new THREE.Vector3()
-                .subVectors(this.position, collidedTree.position)
-                .normalize();
-
-            // Arrêter le kart et le faire rebondir légèrement
-            this.speed *= 0.3; // Réduction drastique de la vitesse
-            this.velocity.multiplyScalar(0.2); // Réduire la vélocité
-
-            // Ajouter un rebond dans la direction opposée à l'arbre
-            const bounceForce = collisionDirection.multiplyScalar(2);
-            this.velocity.add(bounceForce);
-
-            // Éviter que le kart reste coincé dans l'arbre
-            const pushDistance = (collidedTree.radius + 1.5) - this.position.distanceTo(collidedTree.position);
-            if (pushDistance > 0) {
-                const pushDirection = collisionDirection.clone().multiplyScalar(pushDistance);
-                this.position.add(pushDirection);
-            }
-        } else if (collidedKart) {
-            // Collision avec un autre kart
-            this.handleKartCollision(collidedKart);
+            this.handleTreeCollision(collidedTree);
         } else {
-            // Pas de collision - mise à jour normale de la position
-            this.position.add(this.velocity);
+            this.position.copy(newPosition); // avance (knockback inclus)
+        }
+
+        // Collision avec les autres karts (résolue après le déplacement)
+        const collidedKart = this.checkKartCollision(this.position);
+        if (collidedKart) {
+            this.handleKartCollision(collidedKart);
         }
     }
 
-    checkKartCollision(newPosition, kartRadius = 1.8) {
-        // Obtenir tous les karts du jeu
+    checkKartCollision(position) {
         const allKarts = this.game.getAllKarts();
-
         for (let otherKart of allKarts) {
-            // Ne pas vérifier la collision avec soi-même
             if (otherKart === this) continue;
-
-            const distance = newPosition.distanceTo(otherKart.position);
-            if (distance < kartRadius) {
+            const minDist = this.collisionRadius + (otherKart.collisionRadius || 1.8);
+            if (position.distanceTo(otherKart.position) < minDist) {
                 return otherKart;
             }
         }
         return null;
     }
 
+    // Sévérité d'un impact (0..1) à partir de la vitesse de rapprochement.
+    // La vélocité est en unités/frame (~ vitesse km/h x 0.01).
+    impactSeverity(closingSpeed) {
+        return Math.min(1, closingSpeed / (this.maxSpeed * 0.01));
+    }
+
+    handleTreeCollision(tree) {
+        const normal = new THREE.Vector3().subVectors(this.position, tree.position);
+        if (normal.lengthSq() < 1e-6) normal.set(1, 0, 0);
+        normal.normalize();
+
+        const closing = Math.max(0, -this.velocity.clone().add(this.externalVelocity).dot(normal));
+        const severity = this.impactSeverity(closing);
+
+        // Perte de vitesse marquée + ré-accélération bridée.
+        this.speed *= (1 - 0.5 * severity) * 0.6;
+        this.bumpRecovery = Math.max(0.12, Math.min(this.bumpRecovery, 1 - 0.7 * severity));
+
+        // Rebond persistant + sortie de l'arbre.
+        this.externalVelocity.addScaledVector(normal, 0.4 + 0.6 * severity);
+        this.clampKnockback();
+
+        const pushOut = (tree.radius + this.collisionRadius) - this.position.distanceTo(tree.position);
+        if (pushOut > 0) this.position.addScaledVector(normal, pushOut);
+    }
+
     handleKartCollision(otherKart) {
-        // Calculer la direction de collision
-        const collisionDirection = new THREE.Vector3()
-            .subVectors(this.position, otherKart.position)
-            .normalize();
+        const normal = new THREE.Vector3().subVectors(this.position, otherKart.position);
+        if (normal.lengthSq() < 1e-6) normal.set(1, 0, 0);
+        normal.normalize();
 
-        // Calculer les vitesses relatives
-        const relativeVelocity = this.velocity.clone().sub(otherKart.velocity);
-        const collisionSpeed = relativeVelocity.dot(collisionDirection);
+        // Vitesse de rapprochement à partir des vélocités TOTALES (moteur + choc).
+        const myVel = this.velocity.clone().add(this.externalVelocity);
+        const otherVel = otherKart.velocity.clone().add(otherKart.externalVelocity);
+        const closingSpeed = myVel.sub(otherVel).dot(normal); // <0 si on se rapproche
 
-        // Ne traiter que les collisions frontales (objets qui se rapprochent)
-        if (collisionSpeed > 0) return;
-
-        // Facteur d'élasticité (0 = collision parfaitement inélastique, 1 = parfaitement élastique)
-        const elasticity = 0.6;
-
-        // Masses des karts (on peut les considérer égales)
-        const mass1 = 1;
-        const mass2 = 1;
-
-        // Calcul de l'impulsion de collision
-        const impulse = -(1 + elasticity) * collisionSpeed / (mass1 + mass2);
-
-        // Appliquer l'impulsion aux deux karts
-        const impulseVector = collisionDirection.clone().multiplyScalar(impulse);
-
-        // Mise à jour des vélocités
-        this.velocity.add(impulseVector.clone().multiplyScalar(mass2));
-        otherKart.velocity.sub(impulseVector.clone().multiplyScalar(mass1));
-
-        // Réduction de vitesse due à la collision
-        this.speed *= 0.8;
-        otherKart.speed *= 0.8;
-
-        // Séparer les karts pour éviter qu'ils restent coincés
-        const separationDistance = 3.6; // 2 * kartRadius
-        const currentDistance = this.position.distanceTo(otherKart.position);
-        const overlap = separationDistance - currentDistance;
-
+        // Séparer immédiatement pour éviter le chevauchement / blocage.
+        const minDist = this.collisionRadius + otherKart.collisionRadius;
+        const overlap = minDist - this.position.distanceTo(otherKart.position);
         if (overlap > 0) {
-            const separationVector = collisionDirection.clone().multiplyScalar(overlap * 0.5);
-            this.position.add(separationVector);
-            otherKart.position.sub(separationVector);
+            this.position.addScaledVector(normal, overlap * 0.5);
+            otherKart.position.addScaledVector(normal, -overlap * 0.5);
         }
 
-        // Ajouter un léger effet de rotation due à la collision
-        const rotationEffect = Math.sign(collisionDirection.cross(new THREE.Vector3(0, 1, 0)).y) * 0.1;
-        this.angularVelocity += rotationEffect;
-        otherKart.angularVelocity -= rotationEffect;
+        // Ne pousser que s'ils se rapprochent (sinon ils s'éloignent déjà).
+        if (closingSpeed >= 0) return;
+
+        const severity = this.impactSeverity(-closingSpeed);
+        const elasticity = 0.5;
+        const impulse = (1 + elasticity) * (-closingSpeed) / 2; // masses égales
+
+        // Impulsion PERSISTANTE (knockback) opposée sur chaque kart : c'est ce qui
+        // dévie réellement la trajectoire et peut les envoyer dans l'herbe.
+        this.externalVelocity.addScaledVector(normal, impulse);
+        otherKart.externalVelocity.addScaledVector(normal, -impulse);
+        this.clampKnockback();
+        otherKart.clampKnockback();
+
+        // Perte de vitesse marquée proportionnelle à l'impact + ré-accélération bridée.
+        const speedLoss = 0.35 * severity;
+        this.speed *= (1 - speedLoss);
+        otherKart.speed *= (1 - speedLoss);
+        const recovery = Math.max(0.15, 1 - severity);
+        this.bumpRecovery = Math.min(this.bumpRecovery, recovery);
+        otherKart.bumpRecovery = Math.min(otherKart.bumpRecovery, recovery);
+
+        // Léger effet de rotation (déstabilisation) proportionnel à l'impact.
+        const spin = Math.sign(normal.cross(new THREE.Vector3(0, 1, 0)).y) * 0.06 * severity;
+        this.angularVelocity += spin;
+        otherKart.angularVelocity -= spin;
+    }
+
+    // Limite la vélocité de choc pour éviter les projections irréalistes.
+    clampKnockback() {
+        const maxKnockback = 1.2;
+        if (this.externalVelocity.lengthSq() > maxKnockback * maxKnockback) {
+            this.externalVelocity.normalize().multiplyScalar(maxKnockback);
+        }
     }    checkLapProgress() {
         const track = this.game.getTrack();
         const trackPoints = track.getTrackPoints();
@@ -703,10 +735,12 @@ class Kart {    constructor(color, isPlayer = false, game) {
         this.group.position.copy(this.position);
         this.group.rotation.y = this.rotation;
 
-        // Animation des roues - rotation basée sur la vitesse réelle
+        // Animation des roues - roulement sur le spinner interne, braquage sur
+        // le moyeu (séparés pour éviter la vibration des roues avant).
         const wheelRotationSpeed = Math.abs(this.speed) * 0.08;
         this.wheels.forEach((wheel, index) => {
-            wheel.rotation.x += wheelRotationSpeed;
+            const spinner = wheel.userData.spinner;
+            if (spinner) spinner.rotation.x += wheelRotationSpeed;
 
             // Rotation des roues avant pour la direction (effet de braquage)
             if (index < 2) { // Roues avant
