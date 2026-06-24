@@ -102,7 +102,7 @@ class RainManager {
 
     // Programme la prochaine bascule météo et choisit le temps de la période.
     scheduleNextWeather(initial = false) {
-        const minSec = 12, maxSec = 28;
+        const minSec = 35, maxSec = 75;
         this.weatherTimer = (minSec + Math.random() * (maxSec - minSec)) * 60;
 
         // Probabilité de pluie : modérée au départ, un peu moins de chance de

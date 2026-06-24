@@ -799,10 +799,12 @@ class Kart {    constructor(color, isPlayer = false, game) {
 
         this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, tiltAmount, 0.12);
 
-        // Effet de rebond vertical basé sur la vitesse et les virages
+        // Léger trépidement vertical (subtil, indépendant de la cylindrée).
+        // Basé sur la vitesse NORMALISÉE, sinon l'amplitude explose à 300 km/h.
         const baseHeight = this.position.y;
-        const bounceAmount = Math.abs(this.speed) * 0.002 + Math.abs(this.angularVelocity) * 0.05;
-        const bounceOffset = Math.sin(Date.now() * 0.01) * bounceAmount;
+        const speedNorm = Math.min(Math.abs(this.speed) / this.maxSpeed, 1);
+        const bounceAmount = speedNorm * 0.05 + Math.abs(this.angularVelocity) * 0.03;
+        const bounceOffset = Math.sin(Date.now() * 0.008) * bounceAmount;
         this.group.position.y = baseHeight + bounceOffset;
 
         // Animation du volant selon la direction
