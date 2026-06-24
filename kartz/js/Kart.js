@@ -480,7 +480,9 @@ class Kart {    constructor(color, isPlayer = false, game) {
         const caution = this.aiProfile ? this.aiProfile.cautionFactor : 1.0;
         const speedFactor = this.aiProfile ? this.aiProfile.speedFactor : 1.0;
         const cornerFactor = Math.max(0.32, 1 - turnAhead * 0.9 * caution); // 1 = ligne droite
-        const targetSpeed = this.maxSpeed * cornerFactor * speedFactor;
+        // Lever le pied sous la pluie (jusqu'à -25 %) pour ne pas partir large.
+        const wetPenalty = 1 - track.getWetness() * 0.25;
+        const targetSpeed = this.maxSpeed * cornerFactor * speedFactor * wetPenalty;
 
         // Freiner avant/dans le virage si on va trop vite.
         if (this.speed > targetSpeed) {
@@ -544,8 +546,13 @@ class Kart {    constructor(color, isPlayer = false, game) {
         // Calculer la composante latérale de la vélocité actuelle
         const currentLateralSpeed = this.velocity.dot(lateralDirection);
 
+        // Sur piste mouillée, l'adhérence baisse : on conserve davantage de
+        // vitesse latérale (traction effective plus élevée = plus de glisse).
+        const wetness = this.game.getTrack().getWetness ? this.game.getTrack().getWetness() : 0;
+        const effectiveTraction = Math.min(0.97, this.traction + wetness * 0.15);
+
         // Appliquer la traction (résistance au dérapage latéral)
-        const lateralVelocity = lateralDirection.clone().multiplyScalar(currentLateralSpeed * this.traction);
+        const lateralVelocity = lateralDirection.clone().multiplyScalar(currentLateralSpeed * effectiveTraction);
 
         // Combiner les vélocités avant et latérale
         this.velocity.copy(forwardVelocity).add(lateralVelocity);
