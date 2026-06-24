@@ -93,12 +93,22 @@ class Game {
         this.playerKart.setPosition(this.track.getStartPosition(0));
         this.playerKart.rotation = startRotation;
 
-        // Créer les karts IA
+        // Créer les karts IA, chacun avec un profil distinct : ligne de course
+        // décalée (intérieur/extérieur/centre), vitesse générale et prudence en
+        // virage différentes -> trajectoires et rythmes variés.
         const aiColors = [0x44ff44, 0x4444ff, 0xffff44];
+        const aiProfiles = [
+            { lineOffset: -6.5, speedFactor: 1.0,  cautionFactor: 0.85, mass: 0.85, power: 1.15 }, // léger, vif, agressif (corde int.)
+            { lineOffset:  6.0, speedFactor: 0.95, cautionFactor: 1.05, mass: 1.3,  power: 0.9 },  // lourd, peu puissant (ligne ext.)
+            { lineOffset:  0.0, speedFactor: 0.92, cautionFactor: 1.2,  mass: 1.0,  power: 1.0 }   // équilibré (central)
+        ];
         for (let i = 0; i < 3; i++) {
             const aiKart = new Kart(aiColors[i], false, this);
             aiKart.setPosition(this.track.getStartPosition(i + 1));
             aiKart.rotation = startRotation;
+            aiKart.aiProfile = aiProfiles[i];
+            aiKart.mass = aiProfiles[i].mass;
+            aiKart.powerFactor = aiProfiles[i].power;
             this.aiKarts.push(aiKart);
             this.aiLaps.push(0);
         }
@@ -110,7 +120,8 @@ class Game {
         [this.playerKart, ...this.aiKarts].forEach(kart => {
             if (!kart) return;
             kart.maxSpeed = cfg.maxSpeed;
-            kart.acceleration = cfg.acceleration;
+            // Puissance = accélération modulée par le profil du kart.
+            kart.acceleration = cfg.acceleration * (kart.powerFactor || 1);
         });
         console.log(`🏎️ Cylindrée ${this.engineClass} : ${cfg.maxSpeed} km/h`);
     }
@@ -185,9 +196,11 @@ class Game {
         const baseCameraDistance = 15;
         const baseCameraHeight = 8;
         
-        // Apply zoom to both distance and height for better zoom effect
+        // Distance ET hauteur proportionnelles au zoom : l'angle de vue reste
+        // constant (caméra toujours derrière, jamais au-dessus). Avant, la
+        // hauteur restait quasi constante -> vue plongeante quand on zoomait.
         const cameraDistance = baseCameraDistance * zoomLevel;
-        const cameraHeight = baseCameraHeight * (0.7 + zoomLevel * 0.3); // Height changes less dramatically        // Calculate base camera angle from kart rotation
+        const cameraHeight = baseCameraHeight * zoomLevel;        // Calculate base camera angle from kart rotation
         let cameraAngleH = kartRot + inputs.cameraRotationX; // Horizontal rotation around kart
         let cameraAngleV = inputs.cameraRotationY; // Vertical angle
         
