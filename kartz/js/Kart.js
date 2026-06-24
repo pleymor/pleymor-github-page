@@ -29,6 +29,8 @@ class Kart {    constructor(color, isPlayer = false, game) {
         this.collisionRadius = 1.8;
         this.externalVelocity = new THREE.Vector3(); // knockback, décroît dans le temps
         this.bumpRecovery = 1; // 0..1 : bride l'accélération après un choc
+        this.mass = 1.0;        // masse (collisions) — surchargée par profil IA
+        this.powerFactor = 1.0; // multiplicateur d'accélération — surchargé par profil IA
         this.laps = 0;
         this.trackProgress = 0;
         this.lastCheckpoint = 0;
@@ -465,16 +467,31 @@ class Kart {    constructor(color, isPlayer = false, game) {
         this.angularVelocity *= 0.75;
         this.rotation += this.angularVelocity;
 
-        // Perte de vitesse en virage comme pour le joueur
-        if (Math.abs(aiSteerInput) > 0.5 && Math.abs(this.speed) > this.maxSpeed * 0.6) {
-            this.speed *= 0.90;
+        // Anticipation de virage : estimer la courbure à venir et plafonner la
+        // vitesse en conséquence. Sans ça, l'IA arrive trop vite et part large
+        // à chaque virage (surtout depuis le doublement des vitesses).
+        const tp = track.getTrackPoints();
+        const n = tp.length;
+        const ci = Math.floor(this.trackProgress);
+        const dirA = new THREE.Vector3().subVectors(tp[(ci + 6) % n], tp[ci % n]).normalize();
+        const dirB = new THREE.Vector3().subVectors(tp[(ci + 14) % n], tp[(ci + 6) % n]).normalize();
+        const turnAhead = Math.acos(Math.max(-1, Math.min(1, dirA.dot(dirB))));
+        // Profil de l'IA (prudence + vitesse générale propres à chaque pilote).
+        const caution = this.aiProfile ? this.aiProfile.cautionFactor : 1.0;
+        const speedFactor = this.aiProfile ? this.aiProfile.speedFactor : 1.0;
+        const cornerFactor = Math.max(0.32, 1 - turnAhead * 0.9 * caution); // 1 = ligne droite
+        const targetSpeed = this.maxSpeed * cornerFactor * speedFactor;
+
+        // Freiner avant/dans le virage si on va trop vite.
+        if (this.speed > targetSpeed) {
+            this.speed = Math.max(targetSpeed, this.speed * 0.92);
         }
 
-        // Accélération avec courbe progressive comme pour le joueur
-        if (this.speed < this.maxSpeed) {
+        // Accélération progressive, plafonnée à la vitesse de passage du virage.
+        if (this.speed < targetSpeed) {
             const speedFactor = Math.pow(1 - (this.speed / this.maxSpeed), 2);
             const addedSpeed = this.acceleration * speedFactor * 0.7 * this.bumpRecovery; // bridé après un choc
-            this.speed = Math.min(this.speed + addedSpeed, this.maxSpeed);
+            this.speed = Math.min(this.speed + addedSpeed, targetSpeed);
         }
 
         // Appliquer la résistance de l'air
@@ -483,8 +500,20 @@ class Kart {    constructor(color, isPlayer = false, game) {
 
     getNextTrackPoint(track) {
         const trackPoints = track.getTrackPoints();
-        const nextIndex = (Math.floor(this.trackProgress) + 5) % trackPoints.length;
-        return trackPoints[nextIndex];
+        const n = trackPoints.length;
+        // Regarder plus loin à haute vitesse : trajectoire plus lisse, moins de survirage.
+        const speedNorm = Math.min(Math.abs(this.speed) / this.maxSpeed, 1);
+        const lookahead = 4 + Math.round(speedNorm * 8); // 4 à 12 points devant
+        const idx = (Math.floor(this.trackProgress) + lookahead) % n;
+        const point = trackPoints[idx];
+
+        // Décalage latéral selon le profil : chaque IA suit une ligne différente.
+        const offset = this.aiProfile ? this.aiProfile.lineOffset : 0;
+        if (!offset) return point.clone();
+
+        const dir = new THREE.Vector3().subVectors(trackPoints[(idx + 1) % n], point).normalize();
+        const perp = new THREE.Vector3(-dir.z, 0, dir.x); // perpendiculaire à la piste
+        return point.clone().add(perp.multiplyScalar(offset));
     }
 
     applyPhysics() {
@@ -625,12 +654,16 @@ class Kart {    constructor(color, isPlayer = false, game) {
         const otherVel = otherKart.velocity.clone().add(otherKart.externalVelocity);
         const closingSpeed = myVel.sub(otherVel).dot(normal); // <0 si on se rapproche
 
-        // Séparer immédiatement pour éviter le chevauchement / blocage.
+        // Masses : un kart lourd est moins dévié et repousse davantage.
+        const m1 = this.mass, m2 = otherKart.mass;
+        const total = m1 + m2;
+
+        // Séparer immédiatement (pondéré par la masse) pour éviter le blocage.
         const minDist = this.collisionRadius + otherKart.collisionRadius;
         const overlap = minDist - this.position.distanceTo(otherKart.position);
         if (overlap > 0) {
-            this.position.addScaledVector(normal, overlap * 0.5);
-            otherKart.position.addScaledVector(normal, -overlap * 0.5);
+            this.position.addScaledVector(normal, overlap * (m2 / total));
+            otherKart.position.addScaledVector(normal, -overlap * (m1 / total));
         }
 
         // Ne pousser que s'ils se rapprochent (sinon ils s'éloignent déjà).
@@ -638,19 +671,19 @@ class Kart {    constructor(color, isPlayer = false, game) {
 
         const severity = this.impactSeverity(-closingSpeed);
         const elasticity = 0.5;
-        const impulse = (1 + elasticity) * (-closingSpeed) / 2; // masses égales
 
-        // Impulsion PERSISTANTE (knockback) opposée sur chaque kart : c'est ce qui
-        // dévie réellement la trajectoire et peut les envoyer dans l'herbe.
-        this.externalVelocity.addScaledVector(normal, impulse);
-        otherKart.externalVelocity.addScaledVector(normal, -impulse);
+        // Impulsion de collision à masses inégales : J = (1+e)·vrel / (1/m1 + 1/m2),
+        // appliquée en knockback persistant (Δv = J/m) -> le plus léger est plus projeté.
+        const J = (1 + elasticity) * (-closingSpeed) / (1 / m1 + 1 / m2);
+        this.externalVelocity.addScaledVector(normal, J / m1);
+        otherKart.externalVelocity.addScaledVector(normal, -J / m2);
         this.clampKnockback();
         otherKart.clampKnockback();
 
-        // Perte de vitesse marquée proportionnelle à l'impact + ré-accélération bridée.
-        const speedLoss = 0.35 * severity;
-        this.speed *= (1 - speedLoss);
-        otherKart.speed *= (1 - speedLoss);
+        // Perte de vitesse proportionnelle à l'impact ; le plus léger encaisse plus.
+        const baseLoss = 0.35 * severity;
+        this.speed *= (1 - baseLoss * (2 * m2 / total));
+        otherKart.speed *= (1 - baseLoss * (2 * m1 / total));
         const recovery = Math.max(0.15, 1 - severity);
         this.bumpRecovery = Math.min(this.bumpRecovery, recovery);
         otherKart.bumpRecovery = Math.min(otherKart.bumpRecovery, recovery);
