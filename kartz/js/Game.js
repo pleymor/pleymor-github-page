@@ -19,6 +19,14 @@ class Game {
         // État de pause
         this.isPaused = false;
 
+        // Cylindrée (vitesse max + accélération), choisie sur l'écran titre.
+        this.engineClass = '100cc';
+        this.engineClasses = {
+            '50cc':  { maxSpeed: 180, acceleration: 1.7 },
+            '100cc': { maxSpeed: 240, acceleration: 2.0 },
+            '150cc': { maxSpeed: 310, acceleration: 2.6 }
+        };
+
         this.init();
     }
 
@@ -96,7 +104,19 @@ class Game {
         }
     }
 
+    // Applique la cylindrée choisie à tous les karts (joueur + IA).
+    applyEngineClass() {
+        const cfg = this.engineClasses[this.engineClass] || this.engineClasses['100cc'];
+        [this.playerKart, ...this.aiKarts].forEach(kart => {
+            if (!kart) return;
+            kart.maxSpeed = cfg.maxSpeed;
+            kart.acceleration = cfg.acceleration;
+        });
+        console.log(`🏎️ Cylindrée ${this.engineClass} : ${cfg.maxSpeed} km/h`);
+    }
+
     startGame() {
+        this.applyEngineClass();
         this.uiManager.hideStartScreen();
         this.uiManager.showGameUI();
 
@@ -328,7 +348,34 @@ class Game {
     animate() {
         requestAnimationFrame(() => this.animate());
 
-        this.update();
+        // Pas de temps fixe (60 Hz) découplé du rendu : la simulation avance
+        // selon le temps réel écoulé, pas selon le nombre de frames. Sans ça la
+        // vitesse du jeu dépend du frame-rate (ralenti si le CPU rame, trop
+        // rapide sur un écran 144 Hz). Les constantes physiques étant réglées
+        // pour ~60 fps, on conserve le même pas et on l'exécute N fois par frame.
+        const FIXED_DT = 1 / 60;
+        const MAX_STEPS = 5; // anti-emballement après un gros lag
+        const now = performance.now();
+        if (this._lastTime === undefined) this._lastTime = now;
+        let frameTime = (now - this._lastTime) / 1000;
+        this._lastTime = now;
+
+        if (!this.gameStarted || this.raceFinished || this.isPaused) {
+            // Ne pas accumuler de retard pendant les pauses / écrans.
+            this._accumulator = 0;
+        } else {
+            if (frameTime > 0.25) frameTime = 0.25; // borne après onglet en arrière-plan
+            this._accumulator = (this._accumulator || 0) + frameTime;
+
+            let steps = 0;
+            while (this._accumulator >= FIXED_DT && steps < MAX_STEPS) {
+                this.update();
+                this._accumulator -= FIXED_DT;
+                steps++;
+            }
+            if (steps >= MAX_STEPS) this._accumulator = 0; // on lâche le retard restant
+        }
+
         this.renderer.render(this.scene, this.camera);
     }
 

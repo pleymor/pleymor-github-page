@@ -44,6 +44,16 @@ class UIManager {
             });
         }
 
+        // Sélecteur de cylindrée (50/100/150cc)
+        const ccOptions = document.querySelectorAll('.cc-option');
+        ccOptions.forEach(btn => {
+            btn.addEventListener('click', () => {
+                ccOptions.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.game.engineClass = btn.dataset.cc;
+            });
+        });
+
         // Bouton pause et menu pause
         if (this.pauseButton) {
             this.pauseButton.addEventListener('click', () => {

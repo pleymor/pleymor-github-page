@@ -256,7 +256,48 @@
             font-size: 1.5em;
             color: var(--neon-green);
             text-shadow: 0 0 15px var(--neon-green);
-        }        #startButton {
+        }
+
+        /* Sélecteur de cylindrée (écran titre) */
+        #engineClassSelector {
+            margin-top: 30px;
+            text-align: center;
+        }
+        #engineClassSelector .cc-label {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            opacity: 0.9;
+        }
+        .cc-options {
+            display: inline-flex;
+            gap: 12px;
+        }
+        .cc-option {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 1.1em;
+            color: white;
+            background: var(--glass-bg);
+            border: 2px solid var(--glass-border);
+            border-radius: 14px;
+            padding: 10px 22px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            letter-spacing: 1px;
+        }
+        .cc-option:hover {
+            border-color: var(--neon-blue);
+            transform: translateY(-2px);
+        }
+        .cc-option.active {
+            background: linear-gradient(45deg, var(--primary-color), var(--neon-pink));
+            border-color: transparent;
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.5), 0 0 14px rgba(255, 0, 128, 0.4);
+        }
+
+        #startButton {
             font-family: 'Orbitron', monospace;
             font-weight: 700;
             background: linear-gradient(45deg, var(--primary-color), var(--neon-pink));
@@ -1060,6 +1101,14 @@
             <p>⚡ EXPÉRIENCE DE COURSE ULTIME ⚡</p>
             <p>🏁 Course de 3 tours sur circuit procédural dynamique</p>
             <p>🎮 Contrôles: ↑↓ Accélération/Frein • ←→ Direction • 🖱️ Molette pour Zoom • 🖱️ Clic+Glisser pour Rotation Caméra</p>            <p>🌧️ Système météo • 🎵 Audio immersif • 🗺️ Radar temps réel</p>
+            <div id="engineClassSelector">
+                <p class="cc-label">🏎️ CYLINDRÉE</p>
+                <div class="cc-options">
+                    <button type="button" class="cc-option" data-cc="50cc">50cc</button>
+                    <button type="button" class="cc-option active" data-cc="100cc">100cc</button>
+                    <button type="button" class="cc-option" data-cc="150cc">150cc</button>
+                </div>
+            </div>
             <button id="startButton">
                 🚀 LANCER LA COURSE
             </button>
